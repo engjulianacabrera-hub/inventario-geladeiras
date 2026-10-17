@@ -190,6 +190,36 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
 .steps span:last-child::after{display:none}
 .steps span.done{color:var(--ok)} .steps span.done::before{content:"✓";background:var(--ok);border-color:var(--ok);color:#fff}
 .steps span.on{color:var(--brand)} .steps span.on::before{background:var(--brand);border-color:var(--brand);color:#fff}
+/* navegação voltar / início */
+.navbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:-6px}
+.navbar .link{font-size:15px}
+.brand{cursor:pointer}
+/* painel */
+.filtros{display:flex;gap:10px;flex-wrap:wrap}
+.filtros .field{min-width:150px}
+.hbars{display:grid;gap:2px}
+.hb{display:grid;grid-template-columns:70px minmax(0,1fr) 150px;gap:12px;align-items:center;padding:7px 8px;border-radius:8px;cursor:pointer;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;width:100%}
+.hb:hover,.hb:focus-visible{background:var(--surface-2)}
+.hb .lb{font:700 16px var(--font-display);letter-spacing:.02em}
+.hb .tr{height:16px;background:var(--surface-2);border-radius:4px;display:flex;gap:2px;overflow:hidden}
+.hb .tr i{display:block;height:100%}
+.hb .tr i:last-child{border-radius:0 4px 4px 0}
+.hb .tr .s-ok{background:var(--ok)} .hb .tr .s-falta{background:var(--bad)} .hb .tr .s-pend{background:color-mix(in srgb,var(--muted) 35%,transparent)}
+.hb .vl{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;line-height:1.25}
+.hb .vl b{color:var(--ink);font-size:15px}
+.hb.vazio{cursor:default}
+.hb.vazio .tr{background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,transparent 6px 12px);border:1px dashed var(--line)}
+.hb.tot{cursor:default;grid-template-columns:170px minmax(0,1fr) 70px}
+.hb.tot .lb{font:600 14.5px var(--font-ui);letter-spacing:0}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);padding:8px 11px;border-radius:9px;font-size:13px;line-height:1.4;z-index:70;max-width:260px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.acoes{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.acoes input{min-height:38px;font-size:15px;padding:6px 10px;width:160px}
+@media (max-width:560px){
+  .hb{grid-template-columns:52px minmax(0,1fr) auto;gap:8px}
+  .hb .vl{white-space:nowrap;font-size:12.5px}
+  .hb .vl small{display:none}
+  .hb.tot{grid-template-columns:118px minmax(0,1fr) 54px}
+}
 @media (max-width:560px){
   nav.tabs button{flex-direction:column;gap:3px;font-size:12.5px;padding:9px 4px 8px;min-height:56px}
   .brand b{font-size:20px}
@@ -212,6 +242,10 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
 
 <div class="wrap">
 <main>
+<div class="navbar" id="navbar" hidden>
+  <button class="link" id="btnVoltar"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Voltar</button>
+  <button class="link" id="btnInicio"><svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/></svg>Início</button>
+</div>
 
 <!-- ================= LOGIN ================= -->
 <section id="v-login" class="view" hidden>
@@ -229,6 +263,7 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
     </div>
     <form id="formLogin" style="display:grid;gap:10px">
       <div class="field" id="fNome" hidden><label class="label" for="lgNome">Nome completo</label><input type="text" id="lgNome" autocomplete="name"></div>
+      <div class="field" id="fCentro" hidden><label class="label" for="lgCentro">Sua unidade</label><select id="lgCentro"><option value="">Carregando…</option></select><span class="muted">Técnicos só veem os inventários da própria unidade.</span></div>
       <div class="field"><label class="label" for="lgEmail">E-mail</label><input type="email" id="lgEmail" autocomplete="email" required></div>
       <div class="field"><label class="label" for="lgSenha">Senha</label><input type="password" id="lgSenha" autocomplete="current-password" required minlength="6"></div>
       <div class="err" id="lgErr" hidden></div>
@@ -334,6 +369,27 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
 </section>
 
 <!-- ================= INVENTÁRIOS (admin / leitura) ================= -->
+<section id="v-painel" class="view" hidden>
+  <div class="panel">
+    <div class="sec-head"><h2>Painel</h2><button class="btn small" id="btnRecarregarPainel">Atualizar</button></div>
+    <div class="filtros">
+      <div class="field"><label class="label" for="fPeriodo">Período</label><select id="fPeriodo"><option value="0">Todo o período</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Últimos 12 meses</option></select></div>
+      <div class="field"><label class="label" for="fSituacao">Situação</label><select id="fSituacao"><option value="todas">Todas</option><option value="andamento">Em andamento</option><option value="encerrado">Encerrados</option></select></div>
+      <div class="field"><label class="label" for="fOrdem">Ordenar unidades</label><select id="fOrdem"><option value="pior">Pior conciliação primeiro</option><option value="falta">Mais geladeiras faltando</option><option value="az">Unidade (A–Z)</option></select></div>
+    </div>
+    <div class="stats oito" id="pKpis"></div>
+  </div>
+  <div class="panel">
+    <div class="sec-head"><h3>Conciliação por unidade</h3><span class="muted">Último inventário de cada unidade · toque para abrir</span></div>
+    <div class="legend"><span><i style="background:var(--ok)"></i>Conforme</span><span><i style="background:var(--bad)"></i>Falta física</span><span><i style="background:color-mix(in srgb,var(--muted) 35%,transparent)"></i>Ainda não encontradas (em andamento)</span></div>
+    <div id="pUnidades" class="hbars"></div>
+  </div>
+  <div class="two">
+    <div class="panel"><h3>Divergências encontradas</h3><p>Soma do último inventário de cada unidade no período.</p><div id="pDiverg" class="hbars"></div></div>
+    <div class="panel"><h3>Em andamento</h3><div id="pAndamento" class="list"></div></div>
+  </div>
+</section>
+
 <section id="v-inventarios" class="view" hidden>
   <div class="panel" id="abrirBox" hidden>
     <h2>Abrir inventário</h2>
@@ -355,7 +411,7 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
 <!-- ================= DETALHE / RELATÓRIO ================= -->
 <section id="v-detalhe" class="view" hidden>
   <div class="panel">
-    <button class="link" id="btnVoltarInv"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Todos os inventários</button>
+    <button class="link" id="btnVoltarInv" hidden><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Todos os inventários</button>
     <div class="sec-head"><h2 id="dtTitulo">Unidade</h2><span id="dtStatus"></span></div>
     <p id="dtMeta"></p>
     <div class="stats oito">
@@ -407,7 +463,7 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
   <div class="panel">
     <div class="sec-head"><h2>Usuários</h2><button class="btn small" id="btnRecarregarUs">Atualizar</button></div>
     <p><b>Técnico</b>: só conta, sem ver a base. <b>Relatórios</b>: gerentes e corporativo, só consultam. <b>Administrador</b>: importa a base, abre inventários e libera usuários. <b>Bloqueado</b>: sem acesso.</p>
-    <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Desde</th></tr></thead><tbody id="usBody"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Unidade</th><th>Desde</th><th>Ações</th></tr></thead><tbody id="usBody"></tbody></table></div>
   </div>
 </section>
 
@@ -424,6 +480,7 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
   <button class="btn" id="btnFotoClose">Fechar</button>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div id="tip" hidden></div>
 
 <script>
 (function(){
@@ -506,7 +563,7 @@ function montarApi(){
     auth:{
       session: async()=>{ const r=await sb.auth.getSession(); return r.data && r.data.session; },
       entrar: async(email,senha)=>ck(await sb.auth.signInWithPassword({email,password:senha})),
-      criar: async(email,senha,nome)=>ck(await sb.auth.signUp({email,password:senha,options:{data:{nome}}})),
+      criar: async(email,senha,nome,centro)=>ck(await sb.auth.signUp({email,password:senha,options:{data:{nome,centro}}})),
       sair: async()=>{ await sb.auth.signOut(); }
     },
     rpc: async(fn,args)=>ck(await sb.rpc(fn,args||{})),
@@ -533,45 +590,79 @@ let faltantes=[];     // busca dirigida
 let detalhe=null;     // relatório aberto
 const PAPEL_NOME={admin:"Administrador",tecnico:"Técnico",leitura:"Relatórios",pendente:"Aguardando liberação",bloqueado:"Bloqueado"};
 
-function mostrar(view){ document.querySelectorAll("main .view, main > section").forEach(s=>{ if(s.parentElement.tagName==="MAIN") s.hidden = s.id!=="v-"+view; }); window.scrollTo(0,0); }
+function mostrar(view){ document.querySelectorAll("main > section").forEach(s=>{ s.hidden = s.id!=="v-"+view; }); window.scrollTo(0,0); atualizarBarraNav(view); }
+
+/* navegação: voltar e início */
+let pilha=[], rotaAtual=null;
+const mesma=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+function home(){ return eu && (eu.papel==="admin"||eu.papel==="leitura") ? {n:"painel"} : {n:"contar"}; }
+function navegar(r, empilhar){
+  if(empilhar!==false && rotaAtual && !mesma(rotaAtual,r)) pilha.push(rotaAtual);
+  rotaAtual=r; pararTimers(); esconderTip();
+  const abaDe={painel:"painel",inventarios:"inventarios",detalhe:"inventarios",contar:"contar",base:"base",usuarios:"usuarios"}[r.n];
+  document.querySelectorAll("#nav button").forEach(b=>b.setAttribute("aria-selected", b.dataset.aba===abaDe));
+  if(r.n==="painel") carregarPainel(); else if(r.n==="inventarios") carregarInventarios(); else if(r.n==="detalhe") abrirDetalhe(r.id);
+  else if(r.n==="contar") abrirContar(); else if(r.n==="base") carregarBase(); else if(r.n==="usuarios") carregarUsuarios();
+}
+function voltar(){
+  if(rotaAtual && rotaAtual.n==="contar" && invAtual){ sairDoInventario(); return; }
+  if(pilha.length) navegar(pilha.pop(), false); else navegar(home(), false);
+}
+function irInicio(){ pilha=[]; if(rotaAtual && rotaAtual.n==="contar" && invAtual && home().n==="contar"){ sairDoInventario(); return; } navegar(home(), false); }
+function atualizarBarraNav(view){
+  const nb=$("navbar"); if(!nb) return;
+  if(!eu || view==="login" || view==="pendente"){ nb.hidden=true; return; }
+  const dentroInv = rotaAtual && rotaAtual.n==="contar" && invAtual;
+  nb.hidden = !(dentroInv || pilha.length || (rotaAtual && !mesma(rotaAtual,home())));
+}
+$("btnVoltar").onclick=voltar; $("btnInicio").onclick=irInicio;
+document.querySelector(".brand").onclick=()=>{ if(eu && eu.papel!=="pendente" && eu.papel!=="bloqueado") irInicio(); };
+// botão "voltar" do Android
+try{ const AppP=window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if(AppP) AppP.addListener("backButton",()=>{
+    if(!$("scanModal").hidden){ $("btnScanClose").click(); return; }
+    if(!$("fotoModal").hidden){ $("btnFotoClose").click(); return; }
+    if(!$("navbar").hidden) voltar(); else AppP.exitApp();
+  }); }catch(e){}
 
 function montarNav(){
-  const nav=$("nav"); const abas = eu.papel==="admin" ? [["inventarios","Inventários"],["contar","Contar"],["base","Base SAP"],["usuarios","Usuários"]]
-    : eu.papel==="leitura" ? [["inventarios","Inventários"]] : [];
+  const nav=$("nav"); const abas = eu.papel==="admin" ? [["painel","Painel"],["inventarios","Inventários"],["contar","Contar"],["base","Base SAP"],["usuarios","Usuários"]]
+    : eu.papel==="leitura" ? [["painel","Painel"],["inventarios","Inventários"]] : [];
   $("tabbar").hidden = abas.length<2;
-  const NI={inventarios:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/>',contar:ICON.idle,base:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',usuarios:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .6 3 2.6 3 6"/>'};
+  const NI={painel:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',inventarios:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/>',contar:ICON.idle,base:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',usuarios:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .6 3 2.6 3 6"/>'};
   nav.innerHTML = abas.map(([k,t])=>'<button data-aba="'+k+'" aria-selected="false">'+svg(NI[k])+t+(k==="usuarios"?'<span class="badge" id="pendBadge" hidden></span>':'')+'</button>').join("");
   nav.querySelectorAll("button").forEach(b=>b.onclick=()=>irAba(b.dataset.aba));
 }
-function irAba(k){
-  aba=k; LS.set("inv.aba",k); pararTimers();
-  document.querySelectorAll("#nav button").forEach(b=>b.setAttribute("aria-selected", b.dataset.aba===k));
-  if(k==="contar") abrirContar();
-  else if(k==="inventarios") carregarInventarios();
-  else if(k==="base") carregarBase();
-  else if(k==="usuarios") carregarUsuarios();
-}
+function irAba(k){ navegar({n:k}); }
 let timers=[];
 function pararTimers(){ timers.forEach(clearInterval); timers=[]; }
 
 /* ======================= LOGIN ======================= */
 let modoCriar=false;
 function setModo(c){ modoCriar=c; $("segEntrar").setAttribute("aria-pressed",!c); $("segCriar").setAttribute("aria-pressed",c);
-  $("fNome").hidden=!c; $("lgBtn").textContent=c?"Criar conta":"Entrar"; $("lgSenha").autocomplete=c?"new-password":"current-password"; $("lgErr").hidden=true; }
+  $("fNome").hidden=!c; $("fCentro").hidden=!c; if(c) carregarCentrosCadastro(); $("lgBtn").textContent=c?"Criar conta":"Entrar"; $("lgSenha").autocomplete=c?"new-password":"current-password"; $("lgErr").hidden=true; }
+let centrosCad=null;
+async function carregarCentrosCadastro(){
+  if(centrosCad) return;
+  try{ centrosCad = await api.rpc("centros_cadastro"); }catch(e){ centrosCad=[]; }
+  $("lgCentro").innerHTML='<option value="">Selecione sua unidade…</option>'+centrosCad.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("")+'<option value="-">Não se aplica (gerente / corporativo)</option>';
+}
 $("segEntrar").onclick=e=>{e.preventDefault();setModo(false)}; $("segCriar").onclick=e=>{e.preventDefault();setModo(true)};
 $("formLogin").onsubmit=async e=>{
   e.preventDefault(); const email=$("lgEmail").value.trim(), senha=$("lgSenha").value, nome=$("lgNome").value.trim();
   if(modoCriar && !nome){ $("lgErr").textContent="Digite seu nome."; $("lgErr").hidden=false; return; }
+  const centro=$("lgCentro").value;
+  if(modoCriar && !centro){ $("lgErr").textContent="Escolha sua unidade."; $("lgErr").hidden=false; return; }
   $("lgBtn").disabled=true; $("lgErr").hidden=true;
   try{
-    if(modoCriar){ const r=await api.auth.criar(email,senha,nome);
+    if(modoCriar){ const r=await api.auth.criar(email,senha,nome,centro==="-"?"":centro);
       if(!r.session){ $("lgErr").textContent="Conta criada. Confirme pelo e-mail que chegou e depois entre."; $("lgErr").hidden=false; setModo(false); return; } }
     else await api.auth.entrar(email,senha);
     await iniciarSessao();
   }catch(err){ $("lgErr").textContent=traduzErro(err); $("lgErr").hidden=false; }
   finally{ $("lgBtn").disabled=false; }
 };
-$("btnSair").onclick=async()=>{ pararTimers(); try{ await api.auth.sair(); }catch(e){} eu=null; LS.set("inv.atual",null); invAtual=null; telaLogin(); };
+$("btnSair").onclick=async()=>{ pararTimers(); pilha=[]; rotaAtual=null; try{ await api.auth.sair(); }catch(e){} eu=null; LS.set("inv.atual",null); invAtual=null; telaLogin(); };
 $("btnPendRecheck").onclick=()=>iniciarSessao();
 
 function telaLogin(){ $("hdrUser").textContent="Entre com sua conta"; $("btnSair").hidden=true; $("tabbar").hidden=true; mostrar("login"); }
@@ -579,19 +670,18 @@ function telaLogin(){ $("hdrUser").textContent="Entre com sua conta"; $("btnSair
 async function iniciarSessao(){
   const s = await api.auth.session();
   if(!s){ telaLogin(); return; }
-  try{ eu = await api.um("perfis","id,email,nome,papel",{id:s.user.id}); }
+  try{ eu = await api.um("perfis","id,email,nome,papel,centro",{id:s.user.id}); }
   catch(e){ toast(traduzErro(e)); }
   if(!eu){ eu={id:s.user.id,email:s.user.email,nome:s.user.email,papel:"pendente"}; }
-  $("hdrUser").textContent = (eu.nome||eu.email)+" · "+(PAPEL_NOME[eu.papel]||eu.papel); $("btnSair").hidden=false;
+  $("hdrUser").textContent = (eu.nome||eu.email)+" · "+(PAPEL_NOME[eu.papel]||eu.papel)+(eu.papel==="tecnico"&&eu.centro?" · "+eu.centro:""); $("btnSair").hidden=false;
   if(eu.papel==="pendente"||eu.papel==="bloqueado"){
     $("tabbar").hidden=true; $("pendTitulo").textContent = eu.papel==="bloqueado"?"Acesso bloqueado":"Aguardando liberação";
     $("pendTexto").textContent = eu.papel==="bloqueado" ? "Seu acesso foi bloqueado pelo administrador." : "Sua conta foi criada. Peça para o administrador liberar seu acesso e depois toque em “Verificar de novo”.";
     mostrar("pendente"); return;
   }
   montarNav();
-  if(eu.papel==="tecnico") irAba("contar");
-  else if(eu.papel==="leitura") irAba("inventarios");
-  else { const a=LS.get("inv.aba","inventarios"); irAba(["inventarios","contar","base","usuarios"].includes(a)?a:"inventarios"); contarPendentes(); }
+  pilha=[]; rotaAtual=null; navegar(home(), false);
+  if(eu.papel==="admin") contarPendentes();
 }
 
 /* ======================= CONTAR ======================= */
@@ -604,7 +694,7 @@ async function carregarAbertos(){
   try{
     const l = await api.rpc("inventarios_abertos");
     $("lstAbertos").innerHTML = l.length ? l.map(i=>'<div class="item click inv-card" data-inv="'+i.id+'"><span class="ico">'+svg('<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M9 5v2M9 13v3"/>')+'</span><span class="s">'+esc(i.centro)+'</span>'+pillStatus(i.status)+'<span class="d">Aberto em '+fDH(i.aberto_em)+' · toque para entrar</span></div>').join("")
-      : '<div class="empty">Nenhum inventário aberto agora. Peça ao administrador para abrir a unidade.</div>';
+      : '<div class="empty">'+(eu.papel==="tecnico"&&!eu.centro ? "Seu cadastro ainda não tem unidade. Peça ao administrador para definir sua unidade." : "Nenhum inventário aberto agora"+(eu.papel==="tecnico"?" para a unidade "+esc(eu.centro):"")+". Peça ao administrador para abrir.")+'</div>';
   }catch(e){ $("lstAbertos").innerHTML='<div class="empty">'+esc(traduzErro(e))+'</div>'; }
 }
 $("btnRecarregarAbertos").onclick=carregarAbertos;
@@ -613,7 +703,8 @@ $("lstAbertos").onclick=async e=>{
   try{ await api.rpc("entrar_inventario",{p_inv:+it.dataset.inv}); invAtual=+it.dataset.inv; LS.set("inv.atual",invAtual); estado=null; faltantes=[]; feedback("idle","","O resultado da leitura aparece aqui."); abrirContar(); }
   catch(err){ toast(traduzErro(err)); }
 };
-$("btnTrocarInv").onclick=()=>{ pararTimers(); invAtual=null; LS.set("inv.atual",null); mostrar("escolher"); carregarAbertos(); };
+function sairDoInventario(){ pararTimers(); invAtual=null; LS.set("inv.atual",null); mostrar("escolher"); carregarAbertos(); }
+$("btnTrocarInv").onclick=sairDoInventario;
 
 async function atualizarContagem(comFaltantes){
   if(!invAtual) return;
@@ -795,8 +886,8 @@ $("btnAbrir").onclick=async()=>{
   try{ await api.rpc("abrir_inventario",{p_centro:c}); toast("Inventário da unidade "+c+" aberto"); carregarInventarios(); }
   catch(e){ toast(traduzErro(e)); } finally{ $("btnAbrir").disabled=false; }
 };
-$("invBody").onclick=e=>{ const tr=e.target.closest("tr[data-id]"); if(tr) abrirDetalhe(+tr.dataset.id); };
-$("btnVoltarInv").onclick=()=>carregarInventarios();
+$("invBody").onclick=e=>{ const tr=e.target.closest("tr[data-id]"); if(tr) navegar({n:"detalhe",id:+tr.dataset.id}); };
+$("btnVoltarInv").onclick=voltar;
 
 const COLS_ESP="serie,equipamento,status_sistema,centro,localizacao,centro_custo,ano,material,texto_material,sala,denominacao";
 async function abrirDetalhe(id){
@@ -882,7 +973,7 @@ $("btnFaseNao").onclick=()=>{ $("faseBox").hidden=true; };
 $("btnFaseSim").onclick=async()=>{ const r=detalhe.r; try{ await api.rpc("admin_mudar_fase",{p_inv:r.id,p_status:r.status==="contagem"?"busca":"encerrado"}); toast("Situação atualizada"); abrirDetalhe(r.id); }catch(e){ toast(traduzErro(e)); } };
 $("btnExcluir").onclick=()=>{ $("excluirBox").hidden=false; };
 $("btnExcluirNao").onclick=()=>{ $("excluirBox").hidden=true; };
-$("btnExcluirSim").onclick=async()=>{ try{ await api.rpc("admin_excluir_inventario",{p_inv:detalhe.r.id}); toast("Inventário excluído"); carregarInventarios(); }catch(e){ toast(traduzErro(e)); } };
+$("btnExcluirSim").onclick=async()=>{ try{ await api.rpc("admin_excluir_inventario",{p_inv:detalhe.r.id}); toast("Inventário excluído"); pilha=pilha.filter(r=>!(r.n==="detalhe"&&r.id===detalhe.r.id)); navegar({n:"inventarios"}, false); }catch(e){ toast(traduzErro(e)); } };
 
 /* exportação */
 $("btnExport").onclick=async()=>{
@@ -918,6 +1009,74 @@ async function entregar(XLSX, wb, nome){
   }
   try{ XLSX.writeFile(wb,nome); toast("Planilha baixada"); }catch(e){ toast("Não foi possível baixar a planilha"); }
 }
+
+/* ======================= PAINEL (admin / leitura) ======================= */
+let painelDados=null;
+async function carregarPainel(){
+  mostrar("painel");
+  if(!painelDados) $("pUnidades").innerHTML='<div class="empty">Carregando…</div>';
+  try{
+    const [inv, cs] = await Promise.all([api.rpc("resumo_inventarios"), api.rpc("centros_base")]);
+    painelDados={inv, cs}; renderPainel();
+  }catch(e){ $("pUnidades").innerHTML='<div class="empty">'+esc(traduzErro(e))+'</div>'; }
+}
+["fPeriodo","fSituacao","fOrdem"].forEach(id=>$(id).onchange=()=>{ LS.set("inv.f."+id,$(id).value); renderPainel(); });
+["fPeriodo","fSituacao","fOrdem"].forEach(id=>{ const v=LS.get("inv.f."+id,null); if(v!==null) $(id).value=v; });
+$("btnRecarregarPainel").onclick=carregarPainel;
+const pct=(a,b)=>b?Math.round(100*a/b):0;
+function renderPainel(){
+  if(!painelDados) return;
+  const dias=+$("fPeriodo").value, sit=$("fSituacao").value, ordem=$("fOrdem").value;
+  const limite = dias ? Date.now()-dias*864e5 : 0;
+  const filtrados = painelDados.inv.filter(r=> new Date(r.aberto_em).getTime()>=limite && (sit==="todas" || (sit==="encerrado" ? r.status==="encerrado" : r.status!=="encerrado")));
+  const ultimo={}; for(const r of filtrados){ if(!ultimo[r.centro] || r.aberto_em>ultimo[r.centro].aberto_em) ultimo[r.centro]=r; }
+  const centros = painelDados.cs.filter(c=>c.centro!=="SEM CENTRO");
+  const linhas = centros.map(c=>{ const r=ultimo[c.centro]; if(!r) return {centro:c.centro, qtd:c.qtd, r:null};
+    const enc=r.status==="encerrado", falta=r.esperado-r.conforme;
+    return {centro:c.centro, qtd:c.qtd, r, enc, falta, p:pct(r.conforme,r.esperado)}; });
+  const comInv=linhas.filter(l=>l.r);
+  const soma=k=>comInv.reduce((s,l)=>s+(+l.r[k]||0),0);
+  const esperado=soma("esperado"), conforme=soma("conforme");
+  const faltaEnc=comInv.filter(l=>l.enc).reduce((s,l)=>s+l.falta,0);
+  const andamento=painelDados.inv.filter(r=>r.status!=="encerrado");
+  const kpi=(cls,v,t,tip)=>'<div class="stat '+cls+'" title="'+esc(tip||"")+'"><b>'+v+'</b><span>'+t+'</span></div>';
+  $("pKpis").innerHTML =
+    kpi("brand", comInv.length+'<span style="font-size:18px;color:var(--muted)"> / '+centros.length+'</span>',"unidades inventariadas","Unidades com inventário no período") +
+    kpi("ok", pct(conforme,esperado)+"%","conciliação geral",num(conforme)+" de "+num(esperado)+" geladeiras da base foram encontradas") +
+    kpi("bad", num(faltaEnc),"falta física","Somente inventários encerrados") +
+    kpi("warn", num(soma("outra_unidade")),"divergência de localização") +
+    kpi("bad", num(soma("sobra")),"sobra física") +
+    kpi("warn", num(soma("sem_etiqueta")),"sem etiqueta") +
+    kpi("", num(andamento.length),"inventários em andamento") +
+    kpi("", num(centros.length-comInv.length),"unidades sem inventário no período");
+  const ord = ordem==="az" ? (a,b)=>a.centro.localeCompare(b.centro)
+    : ordem==="falta" ? (a,b)=>(b.r?b.falta:-1)-(a.r?a.falta:-1) || a.centro.localeCompare(b.centro)
+    : (a,b)=>(a.r?a.p:101)-(b.r?b.p:101) || a.centro.localeCompare(b.centro);
+  linhas.sort(ord);
+  $("pUnidades").innerHTML = linhas.map(l=>{
+    if(!l.r) return '<div class="hb vazio" data-tip="'+esc(l.centro+" · "+num(l.qtd)+" geladeiras na base · sem inventário no período")+'"><span class="lb">'+esc(l.centro)+'</span><span class="tr"></span><span class="vl">sem inventário</span></div>';
+    const r=l.r, pOk=100*r.conforme/(r.esperado||1), pResto=100-pOk;
+    const tip=l.centro+" · "+STATUS_TXT[r.status][0]+" · aberto em "+fData(r.aberto_em)+"\n"+num(r.conforme)+" conforme de "+num(r.esperado)+" ("+l.p+"%)\n"+num(l.falta)+(l.enc?" em falta física":" ainda não encontradas")+"\n"+num(r.outra_unidade)+" de outra unidade · "+num(r.sobra)+" sobras";
+    return '<button class="hb" data-id="'+r.id+'" data-tip="'+esc(tip)+'"><span class="lb">'+esc(l.centro)+'</span><span class="tr"><i class="s-ok" style="width:'+pOk+'%"></i><i class="'+(l.enc?"s-falta":"s-pend")+'" style="width:'+pResto+'%"></i></span><span class="vl"><b>'+l.p+'%</b> · '+num(l.falta)+(l.enc?" faltam":" pend.")+'</span></button>'; }).join("") || '<div class="empty">Importe a base SAP para ver as unidades.</div>';
+  const tot=[["Falta física",faltaEnc,"bad"],["Divergência de localização",soma("outra_unidade"),"warn"],["Sobra física",soma("sobra"),"bad"],["Leituras duplicadas",soma("duplicadas"),"warn"],["Sem etiqueta",soma("sem_etiqueta"),"warn"]];
+  const mx=Math.max(1,...tot.map(t=>t[1]));
+  $("pDiverg").innerHTML = tot.map(t=>'<div class="hb tot" data-tip="'+esc(t[0]+": "+num(t[1]))+'"><span class="lb">'+t[0]+'</span><span class="tr"><i style="width:'+(100*t[1]/mx)+'%;background:var(--'+t[2]+')"></i></span><span class="vl"><b>'+num(t[1])+'</b></span></div>').join("");
+  $("pAndamento").innerHTML = andamento.length ? andamento.map(r=>'<div class="item click inv-card" data-id="'+r.id+'"><span class="ico">'+svg('<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M9 5v2M9 13v3"/>')+'</span><span class="s">'+esc(r.centro)+'</span>'+pillStatus(r.status)+'<span class="d">'+pct(r.conforme,r.esperado)+'% conforme · '+num(r.lidas)+' lidas · '+esc((r.tecnicos||[]).map(t=>t.nome).join(", ")||"nenhum técnico ainda")+'</span></div>').join("")
+    : '<div class="empty">Nenhum inventário em andamento.</div>';
+}
+$("pUnidades").onclick=e=>{ const b=e.target.closest("[data-id]"); if(b) navegar({n:"detalhe",id:+b.dataset.id}); };
+$("pAndamento").onclick=e=>{ const b=e.target.closest("[data-id]"); if(b) navegar({n:"detalhe",id:+b.dataset.id}); };
+/* dica ao passar o mouse */
+function esconderTip(){ const t=$("tip"); if(t) t.hidden=true; }
+document.addEventListener("mousemove",e=>{
+  const alvo=e.target.closest && e.target.closest("[data-tip]"); const t=$("tip");
+  if(!alvo){ t.hidden=true; return; }
+  t.innerHTML=esc(alvo.dataset.tip).replace(/\n/g,"<br>"); t.hidden=false;
+  const w=t.offsetWidth, hgt=t.offsetHeight; let x=e.clientX+14, y=e.clientY+14;
+  if(x+w>innerWidth-8) x=e.clientX-w-14; if(y+hgt>innerHeight-8) y=e.clientY-hgt-14;
+  t.style.left=x+"px"; t.style.top=y+"px";
+});
+document.addEventListener("scroll",esconderTip,true);
 
 /* ======================= BASE SAP (admin) ======================= */
 let importacao=null;
@@ -978,20 +1137,45 @@ $("btnImpConfirmar").onclick=async()=>{
 async function contarPendentes(){
   try{ const us=await api.todos("perfis","id,papel",{papel:"pendente"}); const b=$("pendBadge"); if(b){ b.hidden=!us.length; b.textContent=us.length; } }catch(e){}
 }
+let usuarios=[], centrosLista=[];
+const ACOES_US = u => u.id===eu.id ? '<span class="muted">–</span>' : '<div class="acoes"><button class="btn small" data-senha="'+u.id+'">Definir senha</button><button class="btn small danger" data-exc="'+u.id+'">Excluir</button></div>';
 async function carregarUsuarios(){
-  mostrar("usuarios"); $("usBody").innerHTML='<tr><td colspan="4" class="muted">Carregando…</td></tr>';
+  mostrar("usuarios"); $("usBody").innerHTML='<tr><td colspan="6" class="muted">Carregando…</td></tr>';
   try{
-    const us=(await api.todos("perfis","id,email,nome,papel,criado_em",{})).sort((a,b)=>(a.papel==="pendente"?0:1)-(b.papel==="pendente"?0:1) || String(a.nome).localeCompare(String(b.nome)));
-    $("usBody").innerHTML=us.map(u=>'<tr><td><b>'+esc(u.nome)+'</b>'+(u.papel==="pendente"?' <span class="pill warn">novo</span>':'')+'</td><td>'+esc(u.email)+'</td><td>'+
+    const [us, cs] = await Promise.all([api.todos("perfis","id,email,nome,papel,centro,criado_em",{}), api.rpc("centros_cadastro")]);
+    centrosLista=cs;
+    usuarios=us.filter(u=>u.papel!=="excluido").sort((a,b)=>(a.papel==="pendente"?0:1)-(b.papel==="pendente"?0:1) || String(a.nome).localeCompare(String(b.nome)));
+    $("usBody").innerHTML=usuarios.map(u=>'<tr data-linha="'+u.id+'"><td><b>'+esc(u.nome)+'</b>'+(u.papel==="pendente"?' <span class="pill warn">novo</span>':'')+'</td><td>'+esc(u.email)+'</td><td>'+
       (u.id===eu.id ? esc(PAPEL_NOME[u.papel])+' (você)' : '<select data-u="'+u.id+'" aria-label="Perfil de '+esc(u.nome)+'">'+["pendente","tecnico","leitura","admin","bloqueado"].map(p=>'<option value="'+p+'"'+(p===u.papel?" selected":"")+'>'+PAPEL_NOME[p]+'</option>').join("")+'</select>')+
-      '</td><td>'+fData(u.criado_em)+'</td></tr>').join("");
+      '</td><td><select data-c="'+u.id+'" aria-label="Unidade de '+esc(u.nome)+'"><option value="">–</option>'+centrosLista.map(c=>'<option value="'+esc(c)+'"'+(c===u.centro?" selected":"")+'>'+esc(c)+'</option>').join("")+'</select>'+
+      '</td><td>'+fData(u.criado_em)+'</td><td class="acoes-cel">'+ACOES_US(u)+'</td></tr>').join("");
     contarPendentes();
-  }catch(e){ $("usBody").innerHTML='<tr><td colspan="4" class="err">'+esc(traduzErro(e))+'</td></tr>'; }
+  }catch(e){ $("usBody").innerHTML='<tr><td colspan="6" class="err">'+esc(traduzErro(e))+'</td></tr>'; }
 }
 $("btnRecarregarUs").onclick=carregarUsuarios;
 $("usBody").onchange=async e=>{
-  const s=e.target.closest("select[data-u]"); if(!s) return;
-  try{ await api.atualizar("perfis",{papel:s.value},{id:s.dataset.u}); toast("Perfil atualizado"); contarPendentes(); }catch(err){ toast(traduzErro(err)); carregarUsuarios(); }
+  const s=e.target.closest("select[data-u]"), c=e.target.closest("select[data-c]");
+  try{
+    if(s){ await api.atualizar("perfis",{papel:s.value},{id:s.dataset.u}); toast("Perfil atualizado"); contarPendentes(); }
+    if(c){ await api.atualizar("perfis",{centro:c.value||null},{id:c.dataset.c}); toast("Unidade atualizada"); }
+  }catch(err){ toast(traduzErro(err)); carregarUsuarios(); }
+};
+$("usBody").onclick=async e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const cel=b.closest(".acoes-cel"); const id=b.dataset.senha||b.dataset.exc||b.dataset.id; const u=usuarios.find(x=>x.id===id);
+  if(b.dataset.senha){ cel.innerHTML='<div class="acoes"><input type="text" placeholder="Nova senha (mín. 6)" aria-label="Nova senha"><button class="btn small primary" data-acao="salvarSenha" data-id="'+id+'">Salvar</button><button class="btn small" data-acao="cancelar" data-id="'+id+'">Cancelar</button></div>'; cel.querySelector("input").focus(); }
+  else if(b.dataset.exc){ cel.innerHTML='<div class="acoes"><span class="err">Excluir '+esc(u.nome)+'?</span><button class="btn small danger" data-acao="excluir" data-id="'+id+'">Sim, excluir</button><button class="btn small" data-acao="cancelar" data-id="'+id+'">Não</button></div>'; }
+  else if(b.dataset.acao==="cancelar"){ cel.innerHTML=ACOES_US(u); }
+  else if(b.dataset.acao==="salvarSenha"){
+    const s=cel.querySelector("input").value;
+    if(s.length<6){ toast("A senha precisa ter pelo menos 6 caracteres"); return; }
+    try{ await api.rpc("admin_definir_senha",{p_usuario:id,p_senha:s}); toast("Senha definida. Passe a nova senha para "+u.nome+"."); cel.innerHTML=ACOES_US(u); }
+    catch(err){ toast(traduzErro(err)); }
+  }
+  else if(b.dataset.acao==="excluir"){
+    try{ await api.rpc("admin_excluir_usuario",{p_usuario:id}); toast(u.nome+" foi excluído"); carregarUsuarios(); }
+    catch(err){ toast(traduzErro(err)); }
+  }
 };
 
 /* ======================= INÍCIO ======================= */
