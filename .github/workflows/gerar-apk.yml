@@ -31,7 +31,7 @@ jobs:
           mkdir app
           cd app
           npm init -y > /dev/null
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/share@6 @capacitor/app@6 @supabase/supabase-js@2.49.4 xlsx@0.18.5 html5-qrcode@2.3.8
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/share@6 @capacitor/app@6 @supabase/supabase-js@2.49.4 xlsx@0.18.5 html5-qrcode@2.3.8 @capacitor/assets@3.0.5
           mkdir www
           cp ../index.html www/
           cp node_modules/@supabase/supabase-js/dist/umd/supabase.js www/
@@ -40,6 +40,23 @@ jobs:
           if [ -n "$QR" ]; then cp "$QR" www/; fi
           echo '{"appId":"br.inventario.geladeiras","appName":"Inventário Geladeiras","webDir":"www"}' > capacitor.config.json
           npx cap add android
+          cat > icone.js <<'EOF'
+          // Gera as imagens do ícone e da tela de abertura a partir do desenho da geladeira
+          const sharp = require('sharp'); const fs = require('fs');
+          const VERM = '#e41e2b', ESCURO = '#141112';
+          const geladeira = (x, y, k, cor) => `<g transform="translate(${x} ${y}) scale(${k})" fill="none" stroke="${cor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M9 5v2M9 13v3"/></g>`;
+          const svg = (w, h, corpo) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${corpo}</svg>`);
+          const telas = {
+            'icon-foreground.png': svg(1024, 1024, geladeira(260, 260, 21, '#fff')),
+            'icon-background.png': svg(1024, 1024, `<rect width="1024" height="1024" fill="${VERM}"/>`),
+            'icon-only.png': svg(1024, 1024, `<rect width="1024" height="1024" fill="${VERM}"/>` + geladeira(200, 200, 26, '#fff')),
+            'splash.png': svg(2732, 2732, `<rect width="2732" height="2732" fill="${ESCURO}"/><rect x="986" y="986" width="760" height="760" rx="180" fill="${VERM}"/>` + geladeira(1114, 1114, 21, '#fff')),
+          };
+          telas['splash-dark.png'] = telas['splash.png'];
+          fs.mkdirSync('assets', { recursive: true });
+          Promise.all(Object.entries(telas).map(([n, b]) => sharp(b).png().toFile('assets/' + n))).then(() => console.log('imagens geradas'));
+          EOF
+          (node icone.js && npx capacitor-assets generate --android) || echo "Aviso: nao foi possivel gerar o icone; seguindo com o padrao"
           sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />#' android/app/src/main/AndroidManifest.xml
           grep -q "android.permission.CAMERA" android/app/src/main/AndroidManifest.xml
           npx cap sync android
