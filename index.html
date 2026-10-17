@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b5d87">
+<title>Inventário de Geladeiras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Ferramenta de campo: barra azul fixa, botões grandes, uma coluna no celular */
+:root{
+  --bg:#e9eef1; --surface:#ffffff; --surface-2:#f4f7f9; --ink:#14212b; --muted:#566874; --line:#d3dce2;
+  --accent:#0b5d87; --accent-ink:#ffffff; --accent-soft:#dcebf3;
+  --ok:#17744a; --ok-soft:#dcf1e6; --warn:#9a5a00; --warn-soft:#fbeccf; --bad:#b0281f; --bad-soft:#f9dfdc;
+  --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;
+  --radius:10px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0e161c; --surface:#16222b; --surface-2:#1c2a34; --ink:#e4ecf1; --muted:#97a9b5; --line:#2a3a45;
+  --accent:#2f86b8; --accent-ink:#ffffff; --accent-soft:#183647;
+  --ok:#5cc98f; --ok-soft:#173a2a; --warn:#e7a948; --warn-soft:#3b2c12; --bad:#f07a70; --bad-soft:#41201d; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.45;padding-bottom:env(safe-area-inset-bottom,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--accent)}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--accent);color:var(--accent-ink)}
+header.top .wrap{display:flex;align-items:center;gap:10px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;min-width:0;flex:1}
+.brand b{font-size:17px}
+.brand span{font-size:12px;opacity:.85;overflow-wrap:anywhere}
+.top .sair{background:transparent;border:1px solid color-mix(in srgb,var(--accent-ink) 45%,transparent);color:var(--accent-ink);border-radius:8px;padding:6px 10px;font:600 13px var(--font-ui);cursor:pointer;min-height:36px}
+nav.tabs{display:flex;gap:4px;width:100%;overflow-x:auto}
+nav.tabs button{flex:1;border:0;background:transparent;color:var(--accent-ink);opacity:.75;font:600 14px var(--font-ui);padding:9px 8px;border-radius:8px;cursor:pointer;min-height:42px;white-space:nowrap;position:relative}
+nav.tabs button[aria-selected="true"]{opacity:1;background:color-mix(in srgb,var(--accent-ink) 18%,transparent)}
+.badge{display:inline-block;background:var(--warn);color:#fff;border-radius:99px;font-size:11px;padding:0 6px;margin-left:4px;vertical-align:1px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--warn);outline-offset:2px}
+main{padding-block:16px 48px;display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.view{display:grid;gap:16px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:grid;gap:12px;min-width:0}
+.panel>*{min-width:0}
+.panel h2{margin:0;font-size:17px;text-wrap:balance}
+.panel h3{margin:0;font-size:15px;line-height:1.6}
+.panel p{margin:0;color:var(--muted)}
+.label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.field{display:grid;gap:4px;flex:1;min-width:160px}
+input[type=text],input[type=email],input[type=password],input[type=search],select,textarea{width:100%;font:16px var(--font-ui);color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:46px}
+textarea{min-height:80px}
+.btn{border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:600 15px var(--font-ui);padding:10px 16px;border-radius:8px;min-height:46px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.btn.big{min-height:58px;font-size:17px;width:100%}
+.btn.small{min-height:36px;padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.link{background:none;border:0;color:var(--accent);font:600 14px var(--font-ui);cursor:pointer;padding:6px 0;text-align:left}
+.file-btn{position:relative;overflow:hidden}
+.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.scan-input{font-family:var(--font-mono)!important;font-size:20px!important;letter-spacing:.04em;text-transform:uppercase;min-height:54px!important}
+.feedback{border-radius:var(--radius);padding:14px 16px;display:grid;gap:2px;border:1px solid transparent;min-height:72px;align-content:center}
+.feedback .serial{font:600 21px var(--font-mono);letter-spacing:.03em}
+.feedback.ok{background:var(--ok-soft);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
+.feedback.warn{background:var(--warn-soft);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+.feedback.bad{background:var(--bad-soft);color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,transparent)}
+.feedback.idle{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.stats.oito{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:760px){.stats.oito{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.stat{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:2px}
+.stat b{font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:12px;color:var(--muted)}
+.stat.ok b{color:var(--ok)} .stat.warn b{color:var(--warn)} .stat.bad b{color:var(--bad)}
+.list{display:grid;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.item{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;border-top:1px solid var(--line);align-items:center;background:var(--surface)}
+.item:first-child{border-top:0}
+.item .s{font:600 15px var(--font-mono);letter-spacing:.02em;overflow-wrap:anywhere}
+.item .d{grid-column:1/-1;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.item.click{cursor:pointer}
+.item.click:hover{background:var(--surface-2)}
+.pill{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.info{background:var(--accent-soft);color:var(--accent)} .pill.mut{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.x{border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;padding:4px 8px;cursor:pointer;border-radius:6px;min-height:36px}
+.empty{padding:18px;text-align:center;color:var(--muted);background:var(--surface-2);border:1px dashed var(--line);border-radius:8px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;max-height:520px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);white-space:nowrap}
+th{background:var(--surface-2);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-top:0;position:sticky;top:0}
+td.n,th.n{text-align:right}
+td.mono{font-family:var(--font-mono);font-weight:600}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.sec-head h3 .pill{margin-right:6px;vertical-align:1px}
+.confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--warn-soft);color:var(--warn);padding:10px 12px;border-radius:8px}
+.confirm span{flex:1;min-width:180px;font-weight:600}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;z-index:60;max-width:calc(100% - 32px);text-align:center}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal #reader{width:min(480px,100%);background:#000;border-radius:10px;overflow:hidden}
+.modal .scan-msg{color:#fff;font:600 17px var(--font-mono);min-height:26px;text-align:center}
+.modal img{max-width:100%;max-height:80vh;border-radius:8px}
+.auth{max-width:420px;margin:24px auto}
+.seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;font:600 14px var(--font-ui);color:var(--muted);padding:8px;border-radius:6px;cursor:pointer;min-height:40px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.err{color:var(--bad);font-weight:600}
+.muted{color:var(--muted);font-size:13px}
+.chip{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;background:var(--warn-soft);color:var(--warn);padding:4px 10px;border-radius:99px;font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:600;cursor:pointer}
+.check input{width:22px;height:22px;margin:0;flex:none}
+.prog{height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.two{display:grid;gap:16px}
+@media (min-width:900px){.two{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:start}}
+.stack{display:grid;gap:16px;min-width:0}
+.phase{display:flex;gap:6px;flex-wrap:wrap;font-size:12.5px}
+.phase span{padding:4px 10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-weight:600}
+.phase span.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>Inventário de Geladeiras</b><span id="hdrUser">Conectando…</span></div>
+    <button class="sair" id="btnSair" hidden>Sair</button>
+    <nav class="tabs" id="nav" hidden></nav>
+  </div>
+</header>
+
+<div class="wrap">
+<main>
+
+<!-- ================= LOGIN ================= -->
+<section id="v-login" class="view" hidden>
+  <div class="panel auth">
+    <h2>Entrar</h2>
+    <div class="seg" role="group">
+      <button id="segEntrar" aria-pressed="true">Já tenho conta</button>
+      <button id="segCriar" aria-pressed="false">Criar conta</button>
+    </div>
+    <form id="formLogin" style="display:grid;gap:10px">
+      <div class="field" id="fNome" hidden><label class="label" for="lgNome">Nome completo</label><input type="text" id="lgNome" autocomplete="name"></div>
+      <div class="field"><label class="label" for="lgEmail">E-mail</label><input type="email" id="lgEmail" autocomplete="email" required></div>
+      <div class="field"><label class="label" for="lgSenha">Senha</label><input type="password" id="lgSenha" autocomplete="current-password" required minlength="6"></div>
+      <div class="err" id="lgErr" hidden></div>
+      <button class="btn primary big" type="submit" id="lgBtn">Entrar</button>
+      <p class="muted" id="lgDica">Novos usuários ficam aguardando liberação do administrador.</p>
+    </form>
+  </div>
+</section>
+
+<!-- ================= PENDENTE ================= -->
+<section id="v-pendente" class="view" hidden>
+  <div class="panel auth">
+    <h2 id="pendTitulo">Aguardando liberação</h2>
+    <p id="pendTexto">Sua conta foi criada. Peça para o administrador liberar seu acesso e depois toque em “Verificar de novo”.</p>
+    <button class="btn primary" id="btnPendRecheck">Verificar de novo</button>
+  </div>
+</section>
+
+<!-- ================= CONTAR: escolher inventário ================= -->
+<section id="v-escolher" class="view" hidden>
+  <div class="panel">
+    <h2>Escolha o inventário</h2>
+    <p>Toque na unidade em que você vai contar.</p>
+    <div id="lstAbertos" class="list"></div>
+    <button class="btn" id="btnRecarregarAbertos">Atualizar lista</button>
+  </div>
+</section>
+
+<!-- ================= CONTAR: contagem / busca ================= -->
+<section id="v-contar" class="view" hidden>
+  <div class="panel">
+    <div class="sec-head">
+      <h2 id="ctTitulo">Unidade</h2>
+      <button class="link" id="btnTrocarInv">Trocar inventário</button>
+    </div>
+    <div class="phase"><span id="ph1">1 · Contagem cega</span><span id="ph2">2 · Busca dirigida</span><span id="ph3">3 · Encerrado</span></div>
+    <div id="filaChip" class="chip" hidden></div>
+  </div>
+
+  <!-- leitura (usado na contagem e na busca) -->
+  <div class="two" id="ctAtivo" hidden>
+    <div class="stack">
+      <div class="panel">
+        <p id="ctInstrucao">Leia a etiqueta de cada geladeira da unidade.</p>
+        <button class="btn primary big" id="btnScan">📷 Ler etiqueta com a câmera</button>
+        <form id="formAdd" class="row" autocomplete="off">
+          <div class="field" style="min-width:200px"><label class="label" for="inpSerial">Ou digite o número</label>
+            <input type="text" id="inpSerial" class="scan-input" placeholder="GESP…" autocapitalize="characters" spellcheck="false" enterkeyhint="done"></div>
+          <button class="btn primary" type="submit">Adicionar</button>
+        </form>
+        <div class="feedback idle" id="feedback"><span>O resultado da leitura aparece aqui.</span></div>
+        <div class="stats">
+          <div class="stat"><b id="ctMinhas">0</b><span>lidas por você</span></div>
+          <div class="stat"><b id="ctEquipe">0</b><span>lidas pela equipe</span></div>
+          <div class="stat" id="stFaltam" hidden><b id="ctFaltam">0</b><span>ainda faltam</span></div>
+        </div>
+        <button class="btn" id="btnSemEtq">Geladeira sem etiqueta</button>
+        <div id="semEtqBox" hidden style="display:grid;gap:8px">
+          <div class="field"><label class="label" for="semObs">O que você encontrou?</label><textarea id="semObs" placeholder="Ex.: etiqueta arrancada, geladeira 1 porta perto da doca 3"></textarea></div>
+          <label class="btn file-btn" id="lblFoto">📷 Tirar foto<input type="file" id="semFoto" accept="image/*" capture="environment"></label>
+          <img id="semPrev" alt="Foto da geladeira" hidden style="max-width:220px;border-radius:8px">
+          <div class="row"><button class="btn primary" id="btnSemSalvar">Registrar</button><button class="btn" id="btnSemCancelar">Cancelar</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="stack">
+      <!-- busca dirigida -->
+      <div class="panel" id="buscaBox" hidden>
+        <h2>Geladeiras que faltam</h2>
+        <p>Procure estas geladeiras no pátio. Quando achar, leia a etiqueta: ela sai da lista.</p>
+        <input type="search" id="buscaFiltro" placeholder="Filtrar por número…" aria-label="Filtrar lista">
+        <div id="lstFaltam" class="list"></div>
+        <p class="muted" id="faltamMais"></p>
+        <label class="check"><input type="checkbox" id="chkCiente"> Procurei e estou ciente de que as geladeiras que continuam nesta lista não foram encontradas.</label>
+        <button class="btn ok big" id="btnEnviar" disabled>Enviar busca</button>
+        <div id="enviarBox" class="confirm" hidden><span>Depois de enviar, você não poderá mais ler etiquetas neste inventário.</span>
+          <button class="btn small ok" id="btnEnviarSim">Enviar</button><button class="btn small" id="btnEnviarNao">Voltar</button></div>
+      </div>
+      <!-- minhas leituras -->
+      <div class="panel">
+        <div class="sec-head"><h2>Suas leituras</h2><span class="muted" id="minhasInfo"></span></div>
+        <div id="lstMinhas" class="list"></div>
+        <div id="terminarArea">
+          <button class="btn ok big" id="btnTerminar">Terminei minha contagem</button>
+          <div id="terminarBox" class="confirm" hidden><span>Encerrar sua contagem cega? Você só volta a ler na busca dirigida.</span>
+            <button class="btn small ok" id="btnTerminarSim">Encerrar</button><button class="btn small" id="btnTerminarNao">Voltar</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- aguardando / enviado / encerrado -->
+  <div class="panel" id="ctEspera" hidden>
+    <h2 id="esTitulo">Aguardando a equipe</h2>
+    <p id="esTexto"></p>
+    <div id="lstEquipe" class="list"></div>
+    <div class="row">
+      <button class="btn" id="btnEsAtualizar">Atualizar</button>
+      <button class="btn" id="btnReabrir" hidden>Reabrir minha contagem</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= INVENTÁRIOS (admin / leitura) ================= -->
+<section id="v-inventarios" class="view" hidden>
+  <div class="panel" id="abrirBox" hidden>
+    <h2>Abrir inventário</h2>
+    <p>Ao abrir, o app guarda uma cópia da base SAP da unidade. Os técnicos já podem começar a contar.</p>
+    <div class="row">
+      <div class="field"><label class="label" for="selCentro">Unidade (centro, coluna L)</label><select id="selCentro"></select></div>
+      <button class="btn primary" id="btnAbrir">Abrir inventário</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="sec-head"><h2>Inventários</h2><button class="btn small" id="btnRecarregarInv">Atualizar</button></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Unidade</th><th>Situação</th><th>Aberto em</th><th class="n">Base SAP</th><th class="n">Conforme</th><th class="n">Falta física</th><th class="n">Outra unid.</th><th class="n">Sobra</th><th>Técnicos</th></tr></thead>
+      <tbody id="invBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ================= DETALHE / RELATÓRIO ================= -->
+<section id="v-detalhe" class="view" hidden>
+  <div class="panel">
+    <button class="link" id="btnVoltarInv">← Todos os inventários</button>
+    <div class="sec-head"><h2 id="dtTitulo">Unidade</h2><span id="dtStatus"></span></div>
+    <p id="dtMeta"></p>
+    <div class="stats oito">
+      <div class="stat"><b id="dEsp">0</b><span>na base SAP</span></div>
+      <div class="stat ok"><b id="dOk">0</b><span>conforme</span></div>
+      <div class="stat bad"><b id="dFalta">0</b><span id="dFaltaLbl">falta física</span></div>
+      <div class="stat warn"><b id="dOutra">0</b><span>divergência de localização</span></div>
+      <div class="stat bad"><b id="dSobra">0</b><span>sobra física</span></div>
+      <div class="stat warn"><b id="dDup">0</b><span>leituras duplicadas</span></div>
+      <div class="stat warn"><b id="dSem">0</b><span>sem etiqueta</span></div>
+      <div class="stat"><b id="dInc">0</b><span>inconsistência cadastral</span></div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="btnExport">Exportar Excel</button>
+      <button class="btn" id="btnFase" hidden></button>
+      <button class="btn danger" id="btnExcluir" hidden>Excluir inventário</button>
+    </div>
+    <div id="faseBox" class="confirm" hidden><span id="faseTxt"></span><button class="btn small" id="btnFaseSim">Confirmar</button><button class="btn small" id="btnFaseNao">Voltar</button></div>
+    <div id="excluirBox" class="confirm" hidden><span>Excluir este inventário e todas as leituras? Isso não pode ser desfeito.</span><button class="btn small danger" id="btnExcluirSim">Excluir</button><button class="btn small" id="btnExcluirNao">Voltar</button></div>
+    <div class="label">Técnicos</div>
+    <div id="dtTecnicos" class="muted"></div>
+  </div>
+  <div id="dtSecoes" class="view"></div>
+</section>
+
+<!-- ================= BASE SAP (admin) ================= -->
+<section id="v-base" class="view" hidden>
+  <div class="panel">
+    <h2>Base SAP</h2>
+    <p id="baseInfo">Carregando…</p>
+    <p class="muted">Use a planilha exportada da IH10. O app considera só números de série começando por GESP ou GKS, e usa como unidade a coluna “Cen.” de localização (coluna L). Inventários já abertos não mudam ao trocar a base.</p>
+    <label class="btn primary file-btn" style="justify-self:start">Importar nova planilha<input type="file" id="fileSap" accept=".xlsx,.xls"></label>
+    <div id="impBox" hidden style="display:grid;gap:10px">
+      <div class="stats" id="impStats"></div>
+      <div id="impAviso" class="muted"></div>
+      <div class="row"><button class="btn primary" id="btnImpConfirmar">Substituir base no servidor</button><button class="btn" id="btnImpCancelar">Cancelar</button></div>
+    </div>
+    <div id="impProg" hidden style="display:grid;gap:6px"><div class="prog"><i id="impBar"></i></div><span class="muted" id="impTxt"></span></div>
+  </div>
+  <div class="panel">
+    <h2>Geladeiras por unidade</h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Unidade</th><th class="n">Geladeiras</th><th>Inventário</th></tr></thead><tbody id="centrosBody"></tbody></table></div>
+  </div>
+</section>
+
+<!-- ================= USUÁRIOS (admin) ================= -->
+<section id="v-usuarios" class="view" hidden>
+  <div class="panel">
+    <div class="sec-head"><h2>Usuários</h2><button class="btn small" id="btnRecarregarUs">Atualizar</button></div>
+    <p><b>Técnico</b>: só conta, sem ver a base. <b>Relatórios</b>: gerentes e corporativo, só consultam. <b>Administrador</b>: importa a base, abre inventários e libera usuários. <b>Bloqueado</b>: sem acesso.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Desde</th></tr></thead><tbody id="usBody"></tbody></table></div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<div class="modal" id="scanModal" hidden>
+  <div id="reader"></div>
+  <div class="scan-msg" id="scanMsg">Aponte para o código de barras da etiqueta</div>
+  <button class="btn" id="btnScanClose">Fechar câmera</button>
+</div>
+<div class="modal" id="fotoModal" hidden>
+  <img id="fotoImg" alt="Foto registrada pelo técnico">
+  <button class="btn" id="btnFotoClose">Fechar</button>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+/* ======================= CONFIGURAÇÃO ======================= */
+const SUPABASE_URL = "https://tlhlmuemeflauujlpvdr.supabase.co";
+const SUPABASE_KEY = "sb_publishable_FGMP-CxY9mOjhGA-N9EMhA_DNXxvjI_";
+const PREFIXOS = ["GESP","GKS"];
+// colunas da IH10: procuradas pelo nome do cabeçalho (1ª ocorrência); se não achar, usa a letra
+const COLUNAS = {
+  serie:["Nº série","C"], equipamento:["Equipamento","D"], status_sistema:["Status sistema","J"], centro:["Cen.","L"],
+  localizacao:["Localiz.","M"], centro_custo:["Centro cst","R"], ano:["AnoC","AC"], material:["Material","AL"],
+  texto_material:["Texto breve material","AM"], sala:["Sala","AN"], denominacao:["Denominação do tipo","AO"]
+};
+const SEM_CENTRO = "SEM CENTRO";
+const LIBS = {
+  sb:   {local:"supabase.js", cdn:"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js", global:"supabase"},
+  xlsx: {local:"xlsx.full.min.js", cdn:"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js", global:"XLSX"},
+  qr:   {local:"html5-qrcode.min.js", cdn:"https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js", global:"Html5Qrcode"}
+};
+
+/* ======================= UTILIDADES ======================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const norm = s => String(s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+const ehGeladeira = s => PREFIXOS.some(p => s.startsWith(p));
+const fData = t => t ? new Date(t).toLocaleDateString("pt-BR") : "–";
+const fHora = t => t ? new Date(t).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "";
+const fDH = t => t ? new Date(t).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "–";
+const num = n => Number(n||0).toLocaleString("pt-BR");
+const hoje = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+function toast(msg, ms){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true, ms||2800); }
+function colIdx(letra){ let n=0; for(const ch of letra) n=n*26+(ch.charCodeAt(0)-64); return n-1; }
+const LS = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+};
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+const libCache={};
+function lib(name){
+  const L=LIBS[name];
+  if(window[L.global]) return Promise.resolve(window[L.global]);
+  if(!libCache[name]) libCache[name]=loadScript(L.local).catch(()=>loadScript(L.cdn)).then(()=>{ if(!window[L.global]) throw new Error("lib "+name); return window[L.global]; });
+  return libCache[name];
+}
+let actx=null;
+function beep(tipo){ // ok | warn | bad
+  try{ if(navigator.vibrate) navigator.vibrate(tipo==="ok"?60:[90,60,90]); }catch(e){}
+  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(), g=actx.createGain(); o.connect(g); g.connect(actx.destination);
+    o.frequency.value = tipo==="ok"?880:tipo==="warn"?520:240; g.gain.value=.08; o.start(); o.stop(actx.currentTime+(tipo==="ok"?.09:.25)); }catch(e){}
+}
+function traduzErro(e){
+  const m = String((e && (e.message||e.error_description)) || e || "");
+  if(/Invalid login/i.test(m)) return "E-mail ou senha incorretos.";
+  if(/already registered|already been registered/i.test(m)) return "Este e-mail já tem conta. Use “Já tenho conta”.";
+  if(/at least 6|Password should/i.test(m)) return "A senha precisa ter pelo menos 6 caracteres.";
+  if(/Email not confirmed/i.test(m)) return "Confirme seu e-mail pelo link que chegou na caixa de entrada.";
+  if(/valid email|invalid format/i.test(m)) return "Digite um e-mail válido.";
+  if(/Failed to fetch|NetworkError|Load failed|network/i.test(m)) return "Sem conexão com a internet.";
+  return m || "Algo deu errado. Tente de novo.";
+}
+const ehOffline = e => /Failed to fetch|NetworkError|Load failed|network|fetch/i.test(String(e && e.message || e)) || (typeof navigator!=="undefined" && navigator.onLine===false);
+
+/* ======================= ACESSO AO SERVIDOR ======================= */
+let sb=null, api=null;
+function montarApi(){
+  if(window.__API_STUB__) return window.__API_STUB__;
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true, autoRefreshToken:true}});
+  const ck = r => { if(r.error) throw r.error; return r.data; };
+  return {
+    auth:{
+      session: async()=>{ const r=await sb.auth.getSession(); return r.data && r.data.session; },
+      entrar: async(email,senha)=>ck(await sb.auth.signInWithPassword({email,password:senha})),
+      criar: async(email,senha,nome)=>ck(await sb.auth.signUp({email,password:senha,options:{data:{nome}}})),
+      sair: async()=>{ await sb.auth.signOut(); }
+    },
+    rpc: async(fn,args)=>ck(await sb.rpc(fn,args||{})),
+    // lê uma tabela inteira em páginas de 1000 linhas
+    todos: async(tabela,colunas,filtros,ordem)=>{
+      const out=[]; for(let de=0;;de+=1000){
+        let q=sb.from(tabela).select(colunas);
+        for(const k in (filtros||{})) q=q.eq(k,filtros[k]);
+        if(ordem) q=q.order(ordem);
+        const d=ck(await q.range(de,de+999)); out.push(...d); if(d.length<1000) break; }
+      return out; },
+    um: async(tabela,colunas,filtros)=>{ let q=sb.from(tabela).select(colunas); for(const k in filtros) q=q.eq(k,filtros[k]); return ck(await q.maybeSingle()); },
+    inserir: async(tabela,linhas)=>{ ck(await sb.from(tabela).insert(linhas)); },
+    atualizar: async(tabela,valores,filtros)=>{ let q=sb.from(tabela).update(valores); for(const k in filtros) q=q.eq(k,filtros[k]); ck(await q); }
+  };
+}
+
+/* ======================= ESTADO ======================= */
+let eu=null;          // {id,email,nome,papel}
+let aba=null;
+let invAtual=LS.get("inv.atual",null); // id do inventário em contagem neste aparelho
+let estado=null;      // retorno de minha_contagem
+let faltantes=[];     // busca dirigida
+let detalhe=null;     // relatório aberto
+const PAPEL_NOME={admin:"Administrador",tecnico:"Técnico",leitura:"Relatórios",pendente:"Aguardando liberação",bloqueado:"Bloqueado"};
+
+function mostrar(view){ document.querySelectorAll("main .view, main > section").forEach(s=>{ if(s.parentElement.tagName==="MAIN") s.hidden = s.id!=="v-"+view; }); window.scrollTo(0,0); }
+
+function montarNav(){
+  const nav=$("nav"); const abas = eu.papel==="admin" ? [["inventarios","Inventários"],["contar","Contar"],["base","Base SAP"],["usuarios","Usuários"]]
+    : eu.papel==="leitura" ? [["inventarios","Inventários"]] : [];
+  nav.hidden = abas.length<2;
+  nav.innerHTML = abas.map(([k,t])=>'<button data-aba="'+k+'" aria-selected="false">'+t+(k==="usuarios"?'<span class="badge" id="pendBadge" hidden></span>':'')+'</button>').join("");
+  nav.querySelectorAll("button").forEach(b=>b.onclick=()=>irAba(b.dataset.aba));
+}
+function irAba(k){
+  aba=k; LS.set("inv.aba",k); pararTimers();
+  document.querySelectorAll("#nav button").forEach(b=>b.setAttribute("aria-selected", b.dataset.aba===k));
+  if(k==="contar") abrirContar();
+  else if(k==="inventarios") carregarInventarios();
+  else if(k==="base") carregarBase();
+  else if(k==="usuarios") carregarUsuarios();
+}
+let timers=[];
+function pararTimers(){ timers.forEach(clearInterval); timers=[]; }
+
+/* ======================= LOGIN ======================= */
+let modoCriar=false;
+function setModo(c){ modoCriar=c; $("segEntrar").setAttribute("aria-pressed",!c); $("segCriar").setAttribute("aria-pressed",c);
+  $("fNome").hidden=!c; $("lgBtn").textContent=c?"Criar conta":"Entrar"; $("lgSenha").autocomplete=c?"new-password":"current-password"; $("lgErr").hidden=true; }
+$("segEntrar").onclick=e=>{e.preventDefault();setModo(false)}; $("segCriar").onclick=e=>{e.preventDefault();setModo(true)};
+$("formLogin").onsubmit=async e=>{
+  e.preventDefault(); const email=$("lgEmail").value.trim(), senha=$("lgSenha").value, nome=$("lgNome").value.trim();
+  if(modoCriar && !nome){ $("lgErr").textContent="Digite seu nome."; $("lgErr").hidden=false; return; }
+  $("lgBtn").disabled=true; $("lgErr").hidden=true;
+  try{
+    if(modoCriar){ const r=await api.auth.criar(email,senha,nome);
+      if(!r.session){ $("lgErr").textContent="Conta criada. Confirme pelo e-mail que chegou e depois entre."; $("lgErr").hidden=false; setModo(false); return; } }
+    else await api.auth.entrar(email,senha);
+    await iniciarSessao();
+  }catch(err){ $("lgErr").textContent=traduzErro(err); $("lgErr").hidden=false; }
+  finally{ $("lgBtn").disabled=false; }
+};
+$("btnSair").onclick=async()=>{ pararTimers(); try{ await api.auth.sair(); }catch(e){} eu=null; LS.set("inv.atual",null); invAtual=null; telaLogin(); };
+$("btnPendRecheck").onclick=()=>iniciarSessao();
+
+function telaLogin(){ $("hdrUser").textContent="Entre com sua conta"; $("btnSair").hidden=true; $("nav").hidden=true; mostrar("login"); }
+
+async function iniciarSessao(){
+  const s = await api.auth.session();
+  if(!s){ telaLogin(); return; }
+  try{ eu = await api.um("perfis","id,email,nome,papel",{id:s.user.id}); }
+  catch(e){ toast(traduzErro(e)); }
+  if(!eu){ eu={id:s.user.id,email:s.user.email,nome:s.user.email,papel:"pendente"}; }
+  $("hdrUser").textContent = (eu.nome||eu.email)+" · "+(PAPEL_NOME[eu.papel]||eu.papel); $("btnSair").hidden=false;
+  if(eu.papel==="pendente"||eu.papel==="bloqueado"){
+    $("nav").hidden=true; $("pendTitulo").textContent = eu.papel==="bloqueado"?"Acesso bloqueado":"Aguardando liberação";
+    $("pendTexto").textContent = eu.papel==="bloqueado" ? "Seu acesso foi bloqueado pelo administrador." : "Sua conta foi criada. Peça para o administrador liberar seu acesso e depois toque em “Verificar de novo”.";
+    mostrar("pendente"); return;
+  }
+  montarNav();
+  if(eu.papel==="tecnico") irAba("contar");
+  else if(eu.papel==="leitura") irAba("inventarios");
+  else { const a=LS.get("inv.aba","inventarios"); irAba(["inventarios","contar","base","usuarios"].includes(a)?a:"inventarios"); contarPendentes(); }
+}
+
+/* ======================= CONTAR ======================= */
+async function abrirContar(){
+  if(invAtual){ mostrar("contar"); await atualizarContagem(true); timers.push(setInterval(()=>atualizarContagem(false),20000)); }
+  else { mostrar("escolher"); carregarAbertos(); }
+}
+async function carregarAbertos(){
+  $("lstAbertos").innerHTML='<div class="empty">Carregando…</div>';
+  try{
+    const l = await api.rpc("inventarios_abertos");
+    $("lstAbertos").innerHTML = l.length ? l.map(i=>'<div class="item click" data-inv="'+i.id+'"><span class="s">'+esc(i.centro)+'</span><span class="pill '+(i.status==="busca"?"warn":"info")+'">'+(i.status==="busca"?"Busca dirigida":"Contagem cega")+'</span><span class="d">Aberto em '+fDH(i.aberto_em)+'</span></div>').join("")
+      : '<div class="empty">Nenhum inventário aberto agora. Peça ao administrador para abrir a unidade.</div>';
+  }catch(e){ $("lstAbertos").innerHTML='<div class="empty">'+esc(traduzErro(e))+'</div>'; }
+}
+$("btnRecarregarAbertos").onclick=carregarAbertos;
+$("lstAbertos").onclick=async e=>{
+  const it=e.target.closest("[data-inv]"); if(!it) return;
+  try{ await api.rpc("entrar_inventario",{p_inv:+it.dataset.inv}); invAtual=+it.dataset.inv; LS.set("inv.atual",invAtual); estado=null; faltantes=[]; feedback("idle","","O resultado da leitura aparece aqui."); abrirContar(); }
+  catch(err){ toast(traduzErro(err)); }
+};
+$("btnTrocarInv").onclick=()=>{ pararTimers(); invAtual=null; LS.set("inv.atual",null); mostrar("escolher"); carregarAbertos(); };
+
+async function atualizarContagem(comFaltantes){
+  if(!invAtual) return;
+  try{
+    const anterior = estado && estado.status;
+    estado = await api.rpc("minha_contagem",{p_inv:invAtual});
+    if(estado.status==="busca" && (comFaltantes || anterior!=="busca")) await carregarFaltantes();
+    renderContar();
+  }catch(e){ if(!ehOffline(e)){ toast(traduzErro(e)); if(/não encontrado/i.test(String(e.message))){ invAtual=null; LS.set("inv.atual",null); abrirContar(); } } }
+  flushFila();
+}
+async function carregarFaltantes(){ try{ faltantes = await api.rpc("faltantes",{p_inv:invAtual}); }catch(e){} }
+
+function renderContar(){
+  const s=estado; if(!s) return;
+  $("ctTitulo").textContent="Unidade "+s.centro;
+  $("ph1").className = s.status==="contagem"?"on":""; $("ph2").className = s.status==="busca"?"on":""; $("ph3").className = s.status==="encerrado"?"on":"";
+  const ativoContagem = s.status==="contagem" && !s.eu_terminei;
+  const ativoBusca = s.status==="busca" && !s.eu_enviei;
+  $("ctAtivo").hidden = !(ativoContagem||ativoBusca);
+  $("ctEspera").hidden = ativoContagem||ativoBusca;
+  $("ctMinhas").textContent=num(s.minhas_total); $("ctEquipe").textContent=num(s.equipe_total);
+  $("buscaBox").hidden=!ativoBusca; $("stFaltam").hidden=!ativoBusca; $("terminarArea").hidden=!ativoContagem;
+  $("ctInstrucao").textContent = ativoBusca ? "Busca dirigida: procure as geladeiras da lista e leia a etiqueta das que encontrar." : "Contagem cega: leia a etiqueta de cada geladeira que encontrar na unidade.";
+  // minhas leituras
+  const minhas=s.minhas||[];
+  $("minhasInfo").textContent = s.minhas_total>minhas.length ? "mostrando as "+minhas.length+" mais recentes" : "";
+  $("lstMinhas").innerHTML = minhas.length ? minhas.map(m=>'<div class="item"><span class="s">'+(m.serie?esc(m.serie):"Sem etiqueta")+'</span><span>'+
+      (ativoContagem && m.fase==="cega" ? '<button class="x" data-del="'+m.id+'" aria-label="Apagar leitura">×</button>' : '')+'</span><span class="d">'+fHora(m.lida_em)+' · '+(m.origem==="camera"?"câmera":m.origem==="digitado"?"digitado":"sem etiqueta")+(m.fase==="busca"?" · busca dirigida":"")+'</span></div>').join("")
+    : '<div class="empty">Nenhuma leitura sua ainda.</div>';
+  if(ativoBusca) renderFaltantes();
+  if(!ativoContagem && !ativoBusca){
+    const eq=s.equipe||[]; let tit, txt; $("btnReabrir").hidden=true;
+    if(s.status==="encerrado"){ tit="Inventário encerrado"; txt="Obrigado! Este inventário foi concluído."; }
+    else if(s.status==="contagem"){ tit="Aguardando a equipe"; const f=eq.filter(x=>!x.terminou).map(x=>x.nome); txt = f.length? "A busca dirigida começa quando todos terminarem a contagem. Falta: "+f.join(", ")+"." : "Liberando a busca dirigida…"; $("btnReabrir").hidden=false; }
+    else { tit="Busca enviada"; const f=eq.filter(x=>!x.enviou).map(x=>x.nome); txt = "Você já enviou sua busca."+(f.length?" Aguardando: "+f.join(", ")+".":""); }
+    $("esTitulo").textContent=tit; $("esTexto").textContent=txt;
+    $("lstEquipe").innerHTML = eq.map(x=>'<div class="item"><span class="s" style="font-family:var(--font-ui)">'+esc(x.nome)+(x.eu?" (você)":"")+'</span><span class="pill '+((s.status==="contagem"?x.terminou:x.enviou)?"ok":"mut")+'">'+(s.status==="contagem"?(x.terminou?"terminou":"contando"):(x.enviou?"enviou":"buscando"))+'</span></div>').join("");
+  }
+}
+function renderFaltantes(){
+  const f=norm($("buscaFiltro").value);
+  const lista = f ? faltantes.filter(x=>x.serie.includes(f)) : faltantes;
+  const MAX=400;
+  $("ctFaltam").textContent=num(faltantes.length);
+  $("lstFaltam").innerHTML = lista.length ? lista.slice(0,MAX).map(x=>'<div class="item"><span class="s">'+esc(x.serie)+'</span><span class="pill mut">'+esc(x.tipo||"")+'</span></div>').join("")
+    : '<div class="empty">'+(faltantes.length?"Nenhum número com esse filtro.":"Nenhuma geladeira faltando.")+'</div>';
+  $("faltamMais").textContent = lista.length>MAX ? "Mostrando "+MAX+" de "+num(lista.length)+". Use o filtro para achar um número." : "";
+}
+$("buscaFiltro").oninput=renderFaltantes;
+
+function feedback(cls, serie, txt){ const f=$("feedback"); f.className="feedback "+cls; f.innerHTML=(serie?'<span class="serial">'+esc(serie)+'</span>':'')+'<span>'+esc(txt)+'</span>'; }
+
+/* fila de leituras sem sinal */
+let fila = LS.get("inv.fila",[]);
+function salvarFila(){ LS.set("inv.fila",fila); const c=$("filaChip"); c.hidden=!fila.length; c.textContent=fila.length+" leitura(s) guardada(s) sem sinal, serão enviadas automaticamente"; }
+let enviandoFila=false;
+async function flushFila(){
+  if(enviandoFila||!fila.length) return; enviandoFila=true;
+  try{ while(fila.length){ const it=fila[0];
+      try{ await api.rpc("registrar_leitura",{p_inv:it.inv,p_serie:it.serie,p_origem:it.origem}); }
+      catch(e){ if(ehOffline(e)) break; }
+      fila.shift(); salvarFila(); } }
+  finally{ enviandoFila=false; }
+}
+window.addEventListener("online",flushFila); setInterval(flushFila,15000);
+
+let refreshT=null;
+function agendarRefresh(){ clearTimeout(refreshT); refreshT=setTimeout(()=>atualizarContagem(false),1200); }
+
+async function ler(bruto, origem){
+  const s=norm(bruto); if(!s) return null;
+  if(!ehGeladeira(s)){ feedback("bad",s,"Não é geladeira: o número precisa começar com GESP ou GKS."); beep("bad"); return "invalido"; }
+  try{
+    const r = await api.rpc("registrar_leitura",{p_inv:invAtual,p_serie:s,p_origem:origem});
+    if(r.r==="lido"){ feedback("ok",r.serie,"✓ Lido"); beep("ok"); estado.minhas_total++; estado.equipe_total++; }
+    else if(r.r==="encontrada"){ feedback("ok",r.serie,"✓ Encontrada! Saiu da lista de faltantes."); beep("ok"); faltantes=faltantes.filter(x=>x.serie!==r.serie); estado.minhas_total++; estado.equipe_total++; }
+    else if(r.r==="duplicado"){ feedback("warn",r.serie,"Leitura duplicada: já lida por "+r.por+" às "+fHora(r.em)+"."); beep("warn"); }
+    else if(r.r==="invalido"){ feedback("bad",r.serie,"Não é geladeira: o número precisa começar com GESP ou GKS."); beep("bad"); }
+    else { feedback("bad",s,r.motivo||"Este inventário não aceita mais leituras."); beep("bad"); agendarRefresh(); }
+    $("ctMinhas").textContent=num(estado.minhas_total); $("ctEquipe").textContent=num(estado.equipe_total);
+    if(r.r==="encontrada") renderFaltantes();
+    agendarRefresh(); return r.r;
+  }catch(e){
+    if(ehOffline(e)){ fila.push({inv:invAtual,serie:s,origem,ts:Date.now()}); salvarFila(); feedback("warn",s,"Sem sinal: leitura guardada no celular e será enviada sozinha."); beep("warn"); return "fila"; }
+    feedback("bad",s,traduzErro(e)); beep("bad"); return "erro";
+  }
+}
+$("formAdd").onsubmit=async e=>{ e.preventDefault(); const i=$("inpSerial"); const v=i.value; i.value=""; await ler(v,"digitado"); i.focus(); };
+$("lstMinhas").onclick=async e=>{
+  const b=e.target.closest("[data-del]"); if(!b) return;
+  if(!b.dataset.confirmar){ b.dataset.confirmar="1"; b.textContent="Apagar?"; b.style.fontSize="13px"; b.style.color="var(--bad)"; setTimeout(()=>{ if(b.isConnected){ delete b.dataset.confirmar; b.textContent="×"; b.style.fontSize=""; b.style.color=""; } },4000); return; }
+  try{ await api.rpc("apagar_leitura",{p_leitura:+b.dataset.del}); toast("Leitura apagada"); atualizarContagem(false); }catch(err){ toast(traduzErro(err)); }
+};
+$("btnTerminar").onclick=()=>{ $("terminarBox").hidden=false; $("btnTerminar").hidden=true; };
+$("btnTerminarNao").onclick=()=>{ $("terminarBox").hidden=true; $("btnTerminar").hidden=false; };
+$("btnTerminarSim").onclick=async()=>{
+  await flushFila();
+  try{ const st=await api.rpc("terminar_contagem",{p_inv:invAtual}); $("terminarBox").hidden=true; $("btnTerminar").hidden=false;
+    toast(st==="busca"?"Todos terminaram: a busca dirigida começou":"Contagem encerrada. Aguardando a equipe."); atualizarContagem(true); }
+  catch(e){ toast(traduzErro(e)); }
+};
+$("btnReabrir").onclick=async()=>{ try{ await api.rpc("reabrir_minha_contagem",{p_inv:invAtual}); atualizarContagem(false); }catch(e){ toast(traduzErro(e)); } };
+$("btnEsAtualizar").onclick=()=>atualizarContagem(true);
+$("chkCiente").onchange=e=>{ $("btnEnviar").disabled=!e.target.checked; };
+$("btnEnviar").onclick=()=>{ $("enviarBox").hidden=false; $("btnEnviar").hidden=true; };
+$("btnEnviarNao").onclick=()=>{ $("enviarBox").hidden=true; $("btnEnviar").hidden=false; };
+$("btnEnviarSim").onclick=async()=>{
+  await flushFila();
+  try{ const st=await api.rpc("enviar_busca",{p_inv:invAtual}); $("enviarBox").hidden=true; $("btnEnviar").hidden=false; $("chkCiente").checked=false; $("btnEnviar").disabled=true;
+    toast(st==="encerrado"?"Busca enviada. Inventário encerrado.":"Busca enviada."); atualizarContagem(false); }
+  catch(e){ toast(traduzErro(e)); }
+};
+
+/* sem etiqueta */
+let fotoData=null;
+$("btnSemEtq").onclick=()=>{ $("semEtqBox").hidden=false; $("btnSemEtq").hidden=true; $("semObs").focus(); };
+function fecharSemEtq(){ $("semEtqBox").hidden=true; $("btnSemEtq").hidden=false; $("semObs").value=""; fotoData=null; $("semPrev").hidden=true; $("semFoto").value=""; }
+$("btnSemCancelar").onclick=fecharSemEtq;
+$("semFoto").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const img=new Image(); const url=URL.createObjectURL(f);
+  img.onload=()=>{ const max=900, k=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement("canvas"); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height); fotoData=c.toDataURL("image/jpeg",.6); $("semPrev").src=fotoData; $("semPrev").hidden=false; URL.revokeObjectURL(url); };
+  img.src=url;
+};
+$("btnSemSalvar").onclick=async()=>{
+  const obs=$("semObs").value.trim(); if(!obs && !fotoData){ toast("Escreva uma observação ou tire uma foto"); return; }
+  try{ await api.rpc("registrar_sem_etiqueta",{p_inv:invAtual,p_obs:obs,p_foto:fotoData}); toast("Geladeira sem etiqueta registrada"); fecharSemEtq(); atualizarContagem(false); }
+  catch(e){ toast(traduzErro(e)); }
+};
+
+/* câmera */
+let scanner=null, ultimo="", ultimoTs=0;
+$("btnScan").onclick=async()=>{
+  $("scanModal").hidden=false; $("scanMsg").textContent="Abrindo câmera…";
+  try{
+    const H=await lib("qr"); scanner=new H("reader");
+    const F=window.Html5QrcodeSupportedFormats; const formatos = F ? [F.CODE_128,F.CODE_39,F.CODE_93,F.CODABAR,F.ITF,F.EAN_13,F.QR_CODE,F.DATA_MATRIX] : undefined;
+    const cfg={fps:10, qrbox:(w,h)=>({width:Math.floor(Math.min(w*0.9,380)),height:Math.floor(Math.min(h*0.45,170))}), experimentalFeatures:{useBarCodeDetectorIfSupported:true}};
+    if(formatos) cfg.formatsToSupport=formatos;
+    await scanner.start({facingMode:"environment"}, cfg, async txt=>{
+      const s=norm(txt), agora=Date.now(); if(s===ultimo && agora-ultimoTs<4000) return; ultimo=s; ultimoTs=agora;
+      const r=await ler(s,"camera");
+      const msg={lido:"✓ Lido",encontrada:"✓ Encontrada",duplicado:"Já lida antes",invalido:"Não é geladeira",fila:"Guardada sem sinal"}[r]||"Erro";
+      $("scanMsg").textContent=s+" · "+msg;
+    }, ()=>{});
+    $("scanMsg").textContent="Aponte para o código de barras da etiqueta";
+  }catch(e){ $("scanMsg").textContent="Não foi possível abrir a câmera. Verifique a permissão ou digite o número."; }
+};
+$("btnScanClose").onclick=async()=>{ try{ if(scanner){ await scanner.stop(); scanner.clear(); } }catch(e){} scanner=null; $("scanModal").hidden=true; };
+
+/* ======================= INVENTÁRIOS (admin / leitura) ======================= */
+let resumos=[];
+const STATUS_TXT={contagem:["Contagem cega","info"],busca:["Busca dirigida","warn"],encerrado:["Encerrado","ok"]};
+async function carregarInventarios(){
+  mostrar("inventarios"); $("abrirBox").hidden = eu.papel!=="admin";
+  $("invBody").innerHTML='<tr><td colspan="9" class="muted">Carregando…</td></tr>';
+  try{
+    resumos = await api.rpc("resumo_inventarios");
+    $("invBody").innerHTML = resumos.length ? resumos.map(r=>{ const st=STATUS_TXT[r.status]; const falta=r.esperado-r.conforme;
+      return '<tr class="click" data-id="'+r.id+'"><td><b>'+esc(r.centro)+'</b></td><td><span class="pill '+st[1]+'">'+st[0]+'</span></td><td>'+fData(r.aberto_em)+'</td><td class="n">'+num(r.esperado)+'</td><td class="n">'+num(r.conforme)+'</td><td class="n">'+num(falta)+'</td><td class="n">'+num(r.outra_unidade)+'</td><td class="n">'+num(r.sobra)+'</td><td>'+esc((r.tecnicos||[]).map(t=>t.nome).join(", ")||"–")+'</td></tr>'; }).join("")
+      : '<tr><td colspan="9" class="muted">Nenhum inventário ainda.'+(eu.papel==="admin"?" Abra o primeiro acima.":"")+'</td></tr>';
+    if(eu.papel==="admin"){
+      const cs = await api.rpc("centros_base");
+      $("selCentro").innerHTML = cs.length ? '<option value="">Escolha a unidade…</option>'+cs.map(c=>'<option value="'+esc(c.centro)+'"'+(c.aberto?" disabled":"")+'>'+esc(c.centro)+' · '+num(c.qtd)+' geladeiras'+(c.aberto?" (já aberto)":"")+'</option>').join("")
+        : '<option value="">Importe a base SAP primeiro</option>';
+    }
+  }catch(e){ $("invBody").innerHTML='<tr><td colspan="9" class="err">'+esc(traduzErro(e))+'</td></tr>'; }
+}
+$("btnRecarregarInv").onclick=carregarInventarios;
+$("btnAbrir").onclick=async()=>{
+  const c=$("selCentro").value; if(!c){ toast("Escolha a unidade"); return; }
+  $("btnAbrir").disabled=true;
+  try{ await api.rpc("abrir_inventario",{p_centro:c}); toast("Inventário da unidade "+c+" aberto"); carregarInventarios(); }
+  catch(e){ toast(traduzErro(e)); } finally{ $("btnAbrir").disabled=false; }
+};
+$("invBody").onclick=e=>{ const tr=e.target.closest("tr[data-id]"); if(tr) abrirDetalhe(+tr.dataset.id); };
+$("btnVoltarInv").onclick=()=>carregarInventarios();
+
+const COLS_ESP="serie,equipamento,status_sistema,centro,localizacao,centro_custo,ano,material,texto_material,sala,denominacao";
+async function abrirDetalhe(id){
+  mostrar("detalhe"); $("dtSecoes").innerHTML='<div class="panel"><p>Carregando relatório…</p></div>';
+  $("faseBox").hidden=true; $("excluirBox").hidden=true;
+  try{
+    const r = (await api.rpc("resumo_inventarios")).find(x=>x.id===id);
+    if(!r){ toast("Inventário não encontrado"); carregarInventarios(); return; }
+    const [esp, leit, pessoas, dups] = await Promise.all([
+      api.todos("inv_esperado",COLS_ESP,{inventario_id:id},"serie"),
+      api.todos("leituras","id,serie,tecnico_id,lida_em,fase,origem,resultado,centro_sap,duplicada,observacao",{inventario_id:id},"id"),
+      api.todos("perfis","id,nome",{}),
+      api.todos("base_duplicados","serie,centro,equipamento",{centro:r.centro})
+    ]);
+    detalhe = calcular(r, esp, leit, pessoas, dups);
+    renderDetalhe();
+  }catch(e){ $("dtSecoes").innerHTML='<div class="panel"><p class="err">'+esc(traduzErro(e))+'</p></div>'; }
+}
+function calcular(r, esp, leit, pessoas, dups){
+  const nome = Object.fromEntries(pessoas.map(p=>[p.id,p.nome]));
+  const L = leit.map(l=>({...l, tecnico:nome[l.tecnico_id]||"?"}));
+  const validas = L.filter(l=>!l.duplicada && l.serie);
+  const lidas = new Map(validas.map(l=>[l.serie,l]));
+  const espMap = new Map(esp.map(e=>[e.serie,e]));
+  const conforme = validas.filter(l=>l.resultado==="conforme").map(l=>({...espMap.get(l.serie),...l}));
+  const falta = esp.filter(e=>!lidas.has(e.serie));
+  const outra = validas.filter(l=>l.resultado==="outra_unidade");
+  const sobra = validas.filter(l=>l.resultado==="sobra");
+  const duplicadas = L.filter(l=>l.duplicada).map(l=>{ const p=lidas.get(l.serie); return {...l, primeiro:p?p.tecnico:"", primeiro_em:p?p.lida_em:null}; });
+  const sem = L.filter(l=>l.resultado==="sem_etiqueta");
+  return {r, esp, conforme, falta, outra, sobra, duplicadas, sem, dups};
+}
+function tabela(cols, linhas, vazio){
+  if(!linhas.length) return '<div class="empty">'+(vazio||"Nenhum.")+'</div>';
+  const MAX=500;
+  return '<div class="tbl-wrap"><table><thead><tr>'+cols.map(c=>'<th>'+c[0]+'</th>').join("")+'</tr></thead><tbody>'+
+    linhas.slice(0,MAX).map(l=>'<tr>'+cols.map(c=>'<td'+(c[2]?' class="'+c[2]+'"':'')+'>'+c[1](l)+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>'+
+    (linhas.length>MAX?'<p class="muted">Mostrando '+MAX+' de '+num(linhas.length)+'. A lista completa vai no Excel.</p>':'');
+}
+const C = {
+  serie:["Nº série",l=>esc(l.serie),"mono"], equip:["Equipamento",l=>esc(l.equipamento)], tipo:["Tipo",l=>esc(l.denominacao)],
+  texto:["Material",l=>esc(l.texto_material)], sala:["Sala",l=>esc(l.sala)], loc:["Localiz.",l=>esc(l.localizacao)], stat:["Status",l=>esc(l.status_sistema)],
+  cc:["Centro custo",l=>esc(l.centro_custo)], tec:["Técnico",l=>esc(l.tecnico)], hora:["Lida em",l=>fDH(l.lida_em)],
+  fase:["Fase",l=>l.fase==="busca"?"Busca dirigida":"Contagem cega"], csap:["Unidade no SAP",l=>'<b>'+esc(l.centro_sap)+'</b>']
+};
+function renderDetalhe(){
+  const d=detalhe, r=d.r, st=STATUS_TXT[r.status], aberto=r.status!=="encerrado";
+  $("dtTitulo").textContent="Unidade "+r.centro;
+  $("dtStatus").innerHTML='<span class="pill '+st[1]+'">'+st[0]+'</span>';
+  $("dtMeta").textContent="Aberto em "+fDH(r.aberto_em)+(r.busca_em?" · busca dirigida em "+fDH(r.busca_em):"")+(r.encerrado_em?" · encerrado em "+fDH(r.encerrado_em):"")+" · base: "+(r.base_arquivo||"–")+" ("+fData(r.base_data)+")";
+  $("dEsp").textContent=num(d.esp.length); $("dOk").textContent=num(d.conforme.length); $("dFalta").textContent=num(d.falta.length);
+  $("dFaltaLbl").textContent = aberto ? "ainda não encontradas" : "falta física";
+  $("dOutra").textContent=num(d.outra.length); $("dSobra").textContent=num(d.sobra.length); $("dDup").textContent=num(d.duplicadas.length);
+  $("dSem").textContent=num(d.sem.length); $("dInc").textContent=num(d.dups.length);
+  $("dtTecnicos").innerHTML = (r.tecnicos||[]).length ? r.tecnicos.map(t=>esc(t.nome)+" ("+(t.enviou?"enviou busca "+fDH(t.enviou):t.terminou?"terminou contagem "+fDH(t.terminou):"contando")+")").join(" · ") : "Nenhum técnico entrou ainda.";
+  const adm = eu.papel==="admin";
+  $("btnFase").hidden = !adm || !aberto;
+  $("btnFase").textContent = r.status==="contagem" ? "Liberar busca dirigida agora" : "Encerrar inventário";
+  $("btnExcluir").hidden = !adm;
+  const faltaBusca = d.conforme.filter(l=>l.fase==="busca").length;
+  $("dtSecoes").innerHTML =
+    secao("bad", aberto?"Ainda não encontradas":"Falta física", "Estão na base SAP desta unidade e não foram encontradas na planta."+(aberto?" O inventário ainda está em andamento.":" Candidatas a investigação ou baixa patrimonial."),
+      tabela([C.serie,C.equip,C.tipo,C.texto,C.sala,C.loc,C.stat,C.cc], d.falta, "Todas as geladeiras da base foram encontradas.")) +
+    secao("warn","Divergência de localização","Encontradas nesta planta, mas cadastradas em outra unidade no SAP.", tabela([C.serie,C.csap,C.tec,C.hora,C.fase], d.outra)) +
+    secao("bad","Sobra física","Encontradas na planta e sem cadastro no SAP (GESP/GKS). Confira se não houve erro de digitação.", tabela([C.serie,C.tec,C.hora,C.fase], d.sobra)) +
+    secao("warn","Leitura duplicada","O mesmo número foi lido mais de uma vez.", tabela([C.serie,["Lida de novo por",l=>esc(l.tecnico)],C.hora,["Primeira leitura",l=>esc(l.primeiro)+" · "+fDH(l.primeiro_em)]], d.duplicadas)) +
+    secao("warn","Sem etiqueta","Geladeiras sem etiqueta ou com etiqueta ilegível registradas pelos técnicos.", tabela([["Observação",l=>esc(l.observacao)],C.tec,C.hora,["Foto",l=>'<button class="btn small" data-foto="'+l.id+'">Ver foto</button>']], d.sem)) +
+    secao("mut","Inconsistência cadastral","Números de série que aparecem mais de uma vez na base SAP importada.", tabela([C.serie,["Unidade",l=>esc(l.centro)],C.equip], d.dups)) +
+    secao("ok","Conforme","Na base SAP e encontradas na planta"+(faltaBusca?" ("+num(faltaBusca)+" achadas na busca dirigida)":"")+".", tabela([C.serie,C.equip,C.tipo,C.sala,C.tec,C.hora,C.fase], d.conforme));
+}
+function secao(cls,titulo,desc,html){ return '<div class="panel"><h3><span class="pill '+cls+'">'+titulo+'</span></h3><p>'+desc+'</p>'+html+'</div>'; }
+$("dtSecoes").onclick=async e=>{
+  const b=e.target.closest("[data-foto]"); if(!b) return;
+  try{ const r=await api.um("leituras","foto",{id:+b.dataset.foto}); if(!r||!r.foto){ toast("Sem foto registrada"); return; } $("fotoImg").src=r.foto; $("fotoModal").hidden=false; }
+  catch(err){ toast(traduzErro(err)); }
+};
+$("btnFotoClose").onclick=()=>{ $("fotoModal").hidden=true; $("fotoImg").src=""; };
+$("btnFase").onclick=()=>{ const r=detalhe.r; $("faseTxt").textContent = r.status==="contagem" ? "Liberar a busca dirigida agora? A contagem cega de todos os técnicos será encerrada." : "Encerrar o inventário? O que não foi encontrado vira falta física e ninguém mais poderá ler."; $("faseBox").hidden=false; };
+$("btnFaseNao").onclick=()=>{ $("faseBox").hidden=true; };
+$("btnFaseSim").onclick=async()=>{ const r=detalhe.r; try{ await api.rpc("admin_mudar_fase",{p_inv:r.id,p_status:r.status==="contagem"?"busca":"encerrado"}); toast("Situação atualizada"); abrirDetalhe(r.id); }catch(e){ toast(traduzErro(e)); } };
+$("btnExcluir").onclick=()=>{ $("excluirBox").hidden=false; };
+$("btnExcluirNao").onclick=()=>{ $("excluirBox").hidden=true; };
+$("btnExcluirSim").onclick=async()=>{ try{ await api.rpc("admin_excluir_inventario",{p_inv:detalhe.r.id}); toast("Inventário excluído"); carregarInventarios(); }catch(e){ toast(traduzErro(e)); } };
+
+/* exportação */
+$("btnExport").onclick=async()=>{
+  const d=detalhe; if(!d) return;
+  const XLSX=await lib("xlsx").catch(()=>null); if(!XLSX){ toast("Sem conexão para gerar o Excel"); return; }
+  const wb=XLSX.utils.book_new(), r=d.r;
+  const add=(nome,cab,linhas)=>XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([cab,...linhas]), nome);
+  const espCab=["Nº série","Equipamento","Status sistema","Centro","Localiz.","Centro custo","Ano","Material","Texto breve material","Sala","Denominação do tipo"];
+  const espLin=e=>[e.serie,e.equipamento,e.status_sistema,e.centro,e.localizacao,e.centro_custo,e.ano,e.material,e.texto_material,e.sala,e.denominacao];
+  const dh=t=>t?new Date(t).toLocaleString("pt-BR"):"";
+  const fase=l=>l.fase==="busca"?"Busca dirigida":"Contagem cega";
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ["Inventário de geladeiras — unidade "+r.centro],["Situação",STATUS_TXT[r.status][0]],["Aberto em",dh(r.aberto_em)],["Busca dirigida em",dh(r.busca_em)],["Encerrado em",dh(r.encerrado_em)],
+    ["Base SAP",(r.base_arquivo||"")+" ("+fData(r.base_data)+")"],["Técnicos",(r.tecnicos||[]).map(t=>t.nome).join(", ")],["Gerado em",new Date().toLocaleString("pt-BR")+" por "+eu.nome],[],
+    ["Indicador","Quantidade"],["Na base SAP",d.esp.length],["Conforme",d.conforme.length],[r.status==="encerrado"?"Falta física":"Ainda não encontradas",d.falta.length],
+    ["Divergência de localização",d.outra.length],["Sobra física",d.sobra.length],["Leituras duplicadas",d.duplicadas.length],["Sem etiqueta",d.sem.length],["Inconsistência cadastral",d.dups.length]]), "Resumo");
+  add("Falta física", espCab, d.falta.map(espLin));
+  add("Divergência localização", ["Nº série","Unidade no SAP","Técnico","Lida em","Fase"], d.outra.map(l=>[l.serie,l.centro_sap,l.tecnico,dh(l.lida_em),fase(l)]));
+  add("Sobra física", ["Nº série","Técnico","Lida em","Fase"], d.sobra.map(l=>[l.serie,l.tecnico,dh(l.lida_em),fase(l)]));
+  add("Leitura duplicada", ["Nº série","Lida de novo por","Lida em","Primeira leitura por","Primeira leitura em"], d.duplicadas.map(l=>[l.serie,l.tecnico,dh(l.lida_em),l.primeiro,dh(l.primeiro_em)]));
+  add("Sem etiqueta", ["Observação","Técnico","Lida em","Fase"], d.sem.map(l=>[l.observacao,l.tecnico,dh(l.lida_em),fase(l)]));
+  add("Inconsistência cadastral", ["Nº série","Unidade","Equipamento"], d.dups.map(l=>[l.serie,l.centro,l.equipamento]));
+  add("Conforme", [...espCab,"Técnico","Lida em","Fase"], d.conforme.map(l=>[...espLin(l),l.tecnico,dh(l.lida_em),fase(l)]));
+  await entregar(XLSX, wb, "Inventario_"+r.centro+"_"+hoje()+".xlsx");
+};
+async function entregar(XLSX, wb, nome){
+  if(isNative()){
+    try{ const P=window.Capacitor.Plugins;
+      const w=await P.Filesystem.writeFile({path:nome,data:XLSX.write(wb,{bookType:"xlsx",type:"base64"}),directory:"CACHE"});
+      await P.Share.share({title:nome,text:"Inventário de geladeiras",files:[w.uri],dialogTitle:"Enviar planilha"}); }
+    catch(e){ if(!/cancel/i.test(String(e&&e.message))) toast("Não foi possível compartilhar: "+(e&&e.message||"")); }
+    return;
+  }
+  try{ XLSX.writeFile(wb,nome); toast("Planilha baixada"); }catch(e){ toast("Não foi possível baixar a planilha"); }
+}
+
+/* ======================= BASE SAP (admin) ======================= */
+let importacao=null;
+async function carregarBase(){
+  mostrar("base"); $("impBox").hidden=true; $("impProg").hidden=true;
+  try{
+    const [info, cs] = await Promise.all([api.um("base_info","arquivo,importado_em,total",{id:1}), api.rpc("centros_base")]);
+    $("baseInfo").innerHTML = info ? "Base atual: <b>"+esc(info.arquivo)+"</b>, importada em "+fDH(info.importado_em)+", com <b>"+num(info.total)+"</b> geladeiras em "+cs.length+" unidades." : "Nenhuma base importada ainda.";
+    $("centrosBody").innerHTML = cs.length ? cs.map(c=>'<tr><td><b>'+esc(c.centro)+'</b></td><td class="n">'+num(c.qtd)+'</td><td>'+(c.aberto?'<span class="pill info">aberto</span>':'–')+'</td></tr>').join("") : '<tr><td colspan="3" class="muted">Sem dados.</td></tr>';
+  }catch(e){ $("baseInfo").textContent=traduzErro(e); }
+}
+$("fileSap").onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  $("impBox").hidden=true; $("impProg").hidden=false; $("impBar").style.width="5%"; $("impTxt").textContent="Lendo "+f.name+"…";
+  try{
+    const XLSX=await lib("xlsx");
+    const wb=XLSX.read(await f.arrayBuffer(),{type:"array",dense:true});
+    const linhas=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false,defval:""});
+    const h=linhas.findIndex((l,i)=>i<20 && l.some(c=>String(c).trim()==="Nº série"));
+    const cab=(h>=0?linhas[h]:[]).map(c=>String(c).trim());
+    const idx={}; for(const k in COLUNAS){ const p=cab.indexOf(COLUNAS[k][0]); idx[k]= p>=0?p:colIdx(COLUNAS[k][1]); }
+    const pega=(l,k)=>String(l[idx[k]]??"").trim();
+    const porSerie=new Map(), dupSet=new Set(), todasDup=[];
+    let semCentro=0;
+    for(let i=h+1;i<linhas.length;i++){
+      const l=linhas[i]; const s=norm(l[idx.serie]); if(!s||!ehGeladeira(s)) continue;
+      const reg={serie:s}; for(const k in COLUNAS) if(k!=="serie") reg[k]=pega(l,k).replace(/\s+/g," ");
+      if(!reg.centro){ reg.centro=SEM_CENTRO; semCentro++; }
+      if(porSerie.has(s)){ dupSet.add(s); todasDup.push(reg); } else porSerie.set(s,reg);
+    }
+    if(!porSerie.size) throw new Error("Nenhuma geladeira encontrada. Confira se a planilha tem a coluna “Nº série” com números GESP ou GKS.");
+    const dups=[]; for(const s of dupSet){ const a=porSerie.get(s); dups.push({serie:s,centro:a.centro,equipamento:a.equipamento}); }
+    for(const r of todasDup) dups.push({serie:r.serie,centro:r.centro,equipamento:r.equipamento});
+    const centros=new Set([...porSerie.values()].map(r=>r.centro));
+    importacao={arquivo:f.name, linhas:[...porSerie.values()], dups};
+    $("impProg").hidden=true; $("impBox").hidden=false;
+    $("impStats").innerHTML='<div class="stat"><b>'+num(porSerie.size)+'</b><span>geladeiras</span></div><div class="stat"><b>'+centros.size+'</b><span>unidades</span></div><div class="stat warn"><b>'+num(semCentro)+'</b><span>sem centro (coluna L vazia)</span></div><div class="stat warn"><b>'+num(dupSet.size)+'</b><span>números repetidos</span></div>';
+    $("impAviso").textContent = (semCentro? num(semCentro)+" geladeiras estão sem centro na coluna L; ficam agrupadas como “"+SEM_CENTRO+"”. " : "") + "A base atual no servidor será substituída.";
+  }catch(err){ $("impProg").hidden=true; toast(traduzErro(err),5000); }
+};
+$("btnImpCancelar").onclick=()=>{ importacao=null; $("impBox").hidden=true; };
+$("btnImpConfirmar").onclick=async()=>{
+  const imp=importacao; if(!imp) return;
+  $("impBox").hidden=true; $("impProg").hidden=false; $("btnImpConfirmar").disabled=true;
+  const set=(p,t)=>{ $("impBar").style.width=p+"%"; $("impTxt").textContent=t; };
+  try{
+    set(3,"Apagando a base anterior…"); await api.rpc("admin_limpar_base");
+    const L=imp.linhas, N=1000;
+    for(let i=0;i<L.length;i+=N){ await api.inserir("base_sap",L.slice(i,i+N)); set(5+Math.round(90*(i+N)/L.length), "Enviando "+num(Math.min(i+N,L.length))+" de "+num(L.length)+"…"); }
+    if(imp.dups.length) await api.inserir("base_duplicados",imp.dups);
+    await api.rpc("admin_registrar_base",{p_arquivo:imp.arquivo});
+    set(100,"Pronto!"); toast("Base SAP atualizada: "+num(L.length)+" geladeiras"); importacao=null; setTimeout(carregarBase,800);
+  }catch(e){ set(0,"Erro: "+traduzErro(e)+". Tente importar de novo."); }
+  finally{ $("btnImpConfirmar").disabled=false; }
+};
+
+/* ======================= USUÁRIOS (admin) ======================= */
+async function contarPendentes(){
+  try{ const us=await api.todos("perfis","id,papel",{papel:"pendente"}); const b=$("pendBadge"); if(b){ b.hidden=!us.length; b.textContent=us.length; } }catch(e){}
+}
+async function carregarUsuarios(){
+  mostrar("usuarios"); $("usBody").innerHTML='<tr><td colspan="4" class="muted">Carregando…</td></tr>';
+  try{
+    const us=(await api.todos("perfis","id,email,nome,papel,criado_em",{})).sort((a,b)=>(a.papel==="pendente"?0:1)-(b.papel==="pendente"?0:1) || String(a.nome).localeCompare(String(b.nome)));
+    $("usBody").innerHTML=us.map(u=>'<tr><td><b>'+esc(u.nome)+'</b>'+(u.papel==="pendente"?' <span class="pill warn">novo</span>':'')+'</td><td>'+esc(u.email)+'</td><td>'+
+      (u.id===eu.id ? esc(PAPEL_NOME[u.papel])+' (você)' : '<select data-u="'+u.id+'" aria-label="Perfil de '+esc(u.nome)+'">'+["pendente","tecnico","leitura","admin","bloqueado"].map(p=>'<option value="'+p+'"'+(p===u.papel?" selected":"")+'>'+PAPEL_NOME[p]+'</option>').join("")+'</select>')+
+      '</td><td>'+fData(u.criado_em)+'</td></tr>').join("");
+    contarPendentes();
+  }catch(e){ $("usBody").innerHTML='<tr><td colspan="4" class="err">'+esc(traduzErro(e))+'</td></tr>'; }
+}
+$("btnRecarregarUs").onclick=carregarUsuarios;
+$("usBody").onchange=async e=>{
+  const s=e.target.closest("select[data-u]"); if(!s) return;
+  try{ await api.atualizar("perfis",{papel:s.value},{id:s.dataset.u}); toast("Perfil atualizado"); contarPendentes(); }catch(err){ toast(traduzErro(err)); carregarUsuarios(); }
+};
+
+/* ======================= INÍCIO ======================= */
+(async function(){
+  salvarFila();
+  try{ if(!window.__API_STUB__) await lib("sb"); api=montarApi(); }
+  catch(e){ $("hdrUser").textContent="Sem conexão"; mostrar("pendente"); $("pendTitulo").textContent="Sem conexão com a internet"; $("pendTexto").textContent="Conecte-se à internet e toque em “Verificar de novo”."; $("btnPendRecheck").onclick=()=>location.reload(); return; }
+  try{ await iniciarSessao(); }catch(e){ telaLogin(); }
+})();
+})();
+</script>
+</body>
+</html>
