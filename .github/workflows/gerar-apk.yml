@@ -1,0 +1,61 @@
+name: Gerar APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar os arquivos do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Montar o projeto Android
+        run: |
+          mkdir app
+          cd app
+          npm init -y > /dev/null
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/share@6 @supabase/supabase-js@2.49.4 xlsx@0.18.5 html5-qrcode@2.3.8
+          mkdir www
+          cp ../index.html www/
+          cp node_modules/@supabase/supabase-js/dist/umd/supabase.js www/
+          cp node_modules/xlsx/dist/xlsx.full.min.js www/
+          QR=$(find node_modules/html5-qrcode -name 'html5-qrcode.min.js' | head -n 1)
+          if [ -n "$QR" ]; then cp "$QR" www/; fi
+          echo '{"appId":"br.inventario.geladeiras","appName":"Inventário Geladeiras","webDir":"www"}' > capacitor.config.json
+          npx cap add android
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />#' android/app/src/main/AndroidManifest.xml
+          grep -q "android.permission.CAMERA" android/app/src/main/AndroidManifest.xml
+          npx cap sync android
+
+      - name: Compilar o APK
+        run: |
+          cd app/android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../../InventarioGeladeiras.apk
+
+      - name: Publicar o APK para download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Versão ${{ github.run_number }}
+          body: Baixe o arquivo InventarioGeladeiras.apk abaixo e instale no celular Android.
+          files: InventarioGeladeiras.apk
+          make_latest: true
