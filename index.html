@@ -190,6 +190,10 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
 .steps span:last-child::after{display:none}
 .steps span.done{color:var(--ok)} .steps span.done::before{content:"✓";background:var(--ok);border-color:var(--ok);color:#fff}
 .steps span.on{color:var(--brand)} .steps span.on::before{background:var(--brand);border-color:var(--brand);color:#fff}
+.local-field select{font-weight:600;border-color:var(--brand)}
+.local-field.vazio select{background:var(--bad-soft)}
+.stats.dez{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:760px){.stats.dez{grid-template-columns:repeat(5,minmax(0,1fr))}}
 /* navegação voltar / início */
 .navbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:-6px}
 .navbar .link{font-size:15px}
@@ -309,21 +313,26 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
     <div class="stack">
       <div class="panel">
         <p id="ctInstrucao">Leia a etiqueta de cada geladeira da unidade.</p>
+        <div class="field local-field"><label class="label" for="selLocal">Localização onde você está</label>
+          <select id="selLocal"><option value="">Carregando…</option></select>
+          <span class="muted">Vale para todas as próximas leituras, até você trocar.</span></div>
         <button class="scan-cta" id="btnScan"><span class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M3 8h3l2-3h8l2 3h3v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span><b>Ler etiqueta</b><small>Abrir a câmera e apontar para o código de barras</small></span></button>
         <form id="formAdd" class="row" autocomplete="off">
           <div class="field" style="min-width:200px"><label class="label" for="inpSerial">Ou digite o número</label>
             <input type="text" id="inpSerial" class="scan-input" placeholder="GESP…" autocapitalize="characters" spellcheck="false" enterkeyhint="done"></div>
           <button class="btn primary" type="submit">Adicionar</button>
         </form>
+        <p class="muted" id="notaBusca" hidden>Na busca dirigida, as geladeiras só podem ser registradas lendo a etiqueta com a câmera.</p>
         <div class="feedback idle" id="feedback"><span class="msg">O resultado da leitura aparece aqui.</span></div>
         <div class="stats">
           <div class="stat"><b id="ctMinhas">0</b><span>lidas por você</span></div>
           <div class="stat"><b id="ctEquipe">0</b><span>lidas pela equipe</span></div>
           <div class="stat" id="stFaltam" hidden><b id="ctFaltam">0</b><span>ainda faltam</span></div>
         </div>
-        <button class="btn" id="btnSemEtq"><svg class="i" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1"/><path d="M3 21L21 3"/></svg>Geladeira sem etiqueta</button>
+        <button class="btn" id="btnSemEtq"><svg class="i" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1"/><path d="M3 21L21 3"/></svg>Etiqueta rasurada ou sem etiqueta</button>
         <div id="semEtqBox" hidden style="display:grid;gap:8px">
-          <div class="field"><label class="label" for="semObs">O que você encontrou?</label><textarea id="semObs" placeholder="Ex.: etiqueta arrancada, geladeira 1 porta perto da doca 3"></textarea></div>
+          <p class="muted" id="semNotaBusca" hidden>Na busca dirigida, o registro só é aceito com foto da geladeira.</p>
+          <div class="field" id="semObsField"><label class="label" for="semObs">O que você encontrou?</label><textarea id="semObs" placeholder="Ex.: etiqueta arrancada, geladeira 1 porta perto da doca 3"></textarea></div>
           <label class="btn file-btn" id="lblFoto">📷 Tirar foto<input type="file" id="semFoto" accept="image/*" capture="environment"></label>
           <img id="semPrev" alt="Foto da geladeira" hidden style="max-width:220px;border-radius:8px">
           <div class="row"><button class="btn primary" id="btnSemSalvar">Registrar</button><button class="btn" id="btnSemCancelar">Cancelar</button></div>
@@ -414,7 +423,7 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
     <button class="link" id="btnVoltarInv" hidden><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Todos os inventários</button>
     <div class="sec-head"><h2 id="dtTitulo">Unidade</h2><span id="dtStatus"></span></div>
     <p id="dtMeta"></p>
-    <div class="stats oito">
+    <div class="stats dez">
       <div class="stat"><b id="dEsp">0</b><span>na base SAP</span></div>
       <div class="stat ok"><b id="dOk">0</b><span>conforme</span></div>
       <div class="stat bad"><b id="dFalta">0</b><span id="dFaltaLbl">falta física</span></div>
@@ -423,6 +432,8 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
       <div class="stat warn"><b id="dDup">0</b><span>leituras duplicadas</span></div>
       <div class="stat warn"><b id="dSem">0</b><span>sem etiqueta</span></div>
       <div class="stat"><b id="dInc">0</b><span>inconsistência cadastral</span></div>
+      <div class="stat warn"><b id="dLoc">0</b><span>localiz. diferente do SAP</span></div>
+      <div class="stat"><b id="dLidas">0</b><span>geladeiras lidas</span></div>
     </div>
     <div id="dtBars" style="display:grid;gap:8px"></div>
     <div class="row">
@@ -706,12 +717,23 @@ $("lstAbertos").onclick=async e=>{
 function sairDoInventario(){ pararTimers(); invAtual=null; LS.set("inv.atual",null); mostrar("escolher"); carregarAbertos(); }
 $("btnTrocarInv").onclick=sairDoInventario;
 
+let locais=null;
+async function carregarLocais(){
+  if(!locais){ try{ locais=await api.rpc("localizacoes_base"); }catch(e){ return; } }
+  const atual=LS.get("inv.local","");
+  $("selLocal").innerHTML='<option value="">Escolha a localização…</option>'+locais.map(l=>'<option value="'+esc(l)+'"'+(l===atual?" selected":"")+'>'+esc(l)+'</option>').join("");
+  marcarLocal();
+}
+function marcarLocal(){ $("selLocal").closest(".local-field").classList.toggle("vazio",!$("selLocal").value); }
+$("selLocal").onchange=()=>{ LS.set("inv.local",$("selLocal").value); marcarLocal(); if($("selLocal").value) toast("Localização: "+$("selLocal").value); };
+const localAtual=()=>$("selLocal").value;
 async function atualizarContagem(comFaltantes){
   if(!invAtual) return;
   try{
     const anterior = estado && estado.status;
     estado = await api.rpc("minha_contagem",{p_inv:invAtual});
     if(estado.status==="busca" && (comFaltantes || anterior!=="busca")) await carregarFaltantes();
+    if(!locais) carregarLocais();
     renderContar();
   }catch(e){ if(!ehOffline(e)){ toast(traduzErro(e)); if(/não encontrado/i.test(String(e.message))){ invAtual=null; LS.set("inv.atual",null); abrirContar(); } } }
   flushFila();
@@ -727,13 +749,14 @@ function renderContar(){
   $("ctAtivo").hidden = !(ativoContagem||ativoBusca);
   $("ctEspera").hidden = ativoContagem||ativoBusca;
   $("ctMinhas").textContent=num(s.minhas_total); $("ctEquipe").textContent=num(s.equipe_total);
-  $("buscaBox").hidden=!ativoBusca; $("stFaltam").hidden=!ativoBusca; $("terminarArea").hidden=!ativoContagem;
+  $("buscaBox").hidden=!ativoBusca; $("formAdd").hidden=ativoBusca; $("notaBusca").hidden=!ativoBusca;
+  $("semObsField").hidden=ativoBusca; $("semNotaBusca").hidden=!ativoBusca; $("stFaltam").hidden=!ativoBusca; $("terminarArea").hidden=!ativoContagem;
   $("ctInstrucao").textContent = ativoBusca ? "Busca dirigida: procure as geladeiras da lista e leia a etiqueta das que encontrar." : "Contagem cega: leia a etiqueta de cada geladeira que encontrar na unidade.";
   // minhas leituras
   const minhas=s.minhas||[];
   $("minhasInfo").textContent = s.minhas_total>minhas.length ? "mostrando as "+minhas.length+" mais recentes" : "";
   $("lstMinhas").innerHTML = minhas.length ? minhas.map(m=>'<div class="item"><span class="ico">'+svg(m.serie?ICON.ok:'<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1"/>')+'</span><span class="s">'+(m.serie?esc(m.serie):"Sem etiqueta")+'</span><span>'+
-      (ativoContagem && m.fase==="cega" ? '<button class="x" data-del="'+m.id+'" aria-label="Apagar leitura">×</button>' : '')+'</span><span class="d">'+fHora(m.lida_em)+' · '+(m.origem==="camera"?"câmera":m.origem==="digitado"?"digitado":"sem etiqueta")+(m.fase==="busca"?" · busca dirigida":"")+'</span></div>').join("")
+      (ativoContagem && m.fase==="cega" ? '<button class="x" data-del="'+m.id+'" aria-label="Apagar leitura">×</button>' : '')+'</span><span class="d">'+fHora(m.lida_em)+' · '+(m.origem==="camera"?"câmera":m.origem==="digitado"?"digitado":"sem etiqueta")+(m.localizacao_informada?" · "+esc(m.localizacao_informada):"")+(m.fase==="busca"?" · busca dirigida":"")+'</span></div>').join("")
     : '<div class="empty">Nenhuma leitura sua ainda.</div>';
   if(ativoBusca) renderFaltantes();
   if(!ativoContagem && !ativoBusca){
@@ -767,7 +790,7 @@ let enviandoFila=false;
 async function flushFila(){
   if(enviandoFila||!fila.length) return; enviandoFila=true;
   try{ while(fila.length){ const it=fila[0];
-      try{ await api.rpc("registrar_leitura",{p_inv:it.inv,p_serie:it.serie,p_origem:it.origem}); }
+      try{ await api.rpc("registrar_leitura",{p_inv:it.inv,p_serie:it.serie,p_origem:it.origem,p_local:it.local||null}); }
       catch(e){ if(ehOffline(e)) break; }
       fila.shift(); salvarFila(); } }
   finally{ enviandoFila=false; }
@@ -780,8 +803,10 @@ function agendarRefresh(){ clearTimeout(refreshT); refreshT=setTimeout(()=>atual
 async function ler(bruto, origem){
   const s=norm(bruto); if(!s) return null;
   if(!ehGeladeira(s)){ feedback("bad",s,"Não é geladeira: o número precisa começar com GESP ou GKS."); beep("bad"); return "invalido"; }
+  if(!localAtual()){ feedback("bad",s,"Escolha a localização onde você está antes de ler."); beep("bad"); marcarLocal(); $("selLocal").focus(); return "semlocal"; }
+  if(estado && estado.status==="busca" && origem!=="camera"){ feedback("bad",s,"Na busca dirigida, leia a etiqueta com a câmera."); beep("bad"); return "erro"; }
   try{
-    const r = await api.rpc("registrar_leitura",{p_inv:invAtual,p_serie:s,p_origem:origem});
+    const r = await api.rpc("registrar_leitura",{p_inv:invAtual,p_serie:s,p_origem:origem,p_local:localAtual()});
     if(r.r==="lido"){ feedback("ok",r.serie,"Lido"); beep("ok"); estado.minhas_total++; estado.equipe_total++; }
     else if(r.r==="encontrada"){ feedback("ok",r.serie,"Encontrada! Saiu da lista de faltantes."); beep("ok"); faltantes=faltantes.filter(x=>x.serie!==r.serie); estado.minhas_total++; estado.equipe_total++; }
     else if(r.r==="duplicado"){ feedback("warn",r.serie,"Leitura duplicada: já lida por "+r.por+" às "+fHora(r.em)+"."); beep("warn"); }
@@ -791,7 +816,7 @@ async function ler(bruto, origem){
     if(r.r==="encontrada") renderFaltantes();
     agendarRefresh(); return r.r;
   }catch(e){
-    if(ehOffline(e)){ fila.push({inv:invAtual,serie:s,origem,ts:Date.now()}); salvarFila(); feedback("warn",s,"Sem sinal: leitura guardada no celular e será enviada sozinha."); beep("warn"); return "fila"; }
+    if(ehOffline(e)){ fila.push({inv:invAtual,serie:s,origem,local:localAtual(),ts:Date.now()}); salvarFila(); feedback("warn",s,"Sem sinal: leitura guardada no celular e será enviada sozinha."); beep("warn"); return "fila"; }
     feedback("bad",s,traduzErro(e)); beep("bad"); return "erro";
   }
 }
@@ -823,7 +848,7 @@ $("btnEnviarSim").onclick=async()=>{
 
 /* sem etiqueta */
 let fotoData=null;
-$("btnSemEtq").onclick=()=>{ $("semEtqBox").hidden=false; $("btnSemEtq").hidden=true; $("semObs").focus(); };
+$("btnSemEtq").onclick=()=>{ $("semEtqBox").hidden=false; $("btnSemEtq").hidden=true; if(!$("semObsField").hidden) $("semObs").focus(); };
 function fecharSemEtq(){ $("semEtqBox").hidden=true; $("btnSemEtq").hidden=false; $("semObs").value=""; fotoData=null; $("semPrev").hidden=true; $("semFoto").value=""; }
 $("btnSemCancelar").onclick=fecharSemEtq;
 $("semFoto").onchange=e=>{
@@ -834,14 +859,19 @@ $("semFoto").onchange=e=>{
   img.src=url;
 };
 $("btnSemSalvar").onclick=async()=>{
-  const obs=$("semObs").value.trim(); if(!obs && !fotoData){ toast("Escreva uma observação ou tire uma foto"); return; }
-  try{ await api.rpc("registrar_sem_etiqueta",{p_inv:invAtual,p_obs:obs,p_foto:fotoData}); toast("Geladeira sem etiqueta registrada"); fecharSemEtq(); atualizarContagem(false); }
+  const busca = estado && estado.status==="busca";
+  const obs = busca ? "" : $("semObs").value.trim();
+  if(!localAtual()){ toast("Escolha a localização onde você está"); marcarLocal(); return; }
+  if(busca && !fotoData){ toast("Tire a foto da geladeira para registrar"); return; }
+  if(!obs && !fotoData){ toast("Escreva uma observação ou tire uma foto"); return; }
+  try{ await api.rpc("registrar_sem_etiqueta",{p_inv:invAtual,p_obs:obs,p_foto:fotoData,p_local:localAtual()}); toast("Registro feito"); fecharSemEtq(); atualizarContagem(false); }
   catch(e){ toast(traduzErro(e)); }
 };
 
 /* câmera */
 let scanner=null, ultimo="", ultimoTs=0;
 $("btnScan").onclick=async()=>{
+  if(!localAtual()){ feedback("bad","","Escolha a localização onde você está antes de ler."); beep("bad"); marcarLocal(); $("selLocal").focus(); return; }
   $("scanModal").hidden=false; $("scanMsg").textContent="Abrindo câmera…";
   try{
     const H=await lib("qr"); scanner=new H("reader");
@@ -851,7 +881,7 @@ $("btnScan").onclick=async()=>{
     await scanner.start({facingMode:"environment"}, cfg, async txt=>{
       const s=norm(txt), agora=Date.now(); if(s===ultimo && agora-ultimoTs<4000) return; ultimo=s; ultimoTs=agora;
       const r=await ler(s,"camera");
-      const msg={lido:"✓ Lido",encontrada:"✓ Encontrada",duplicado:"Já lida antes",invalido:"Não é geladeira",fila:"Guardada sem sinal"}[r]||"Erro";
+      const msg={lido:"✓ Lido",encontrada:"✓ Encontrada",duplicado:"Já lida antes",invalido:"Não é geladeira",fila:"Guardada sem sinal",semlocal:"Escolha a localização"}[r]||"Erro";
       $("scanMsg").textContent=s+" · "+msg;
     }, ()=>{});
     $("scanMsg").textContent="Aponte para o código de barras da etiqueta";
@@ -898,7 +928,7 @@ async function abrirDetalhe(id){
     if(!r){ toast("Inventário não encontrado"); carregarInventarios(); return; }
     const [esp, leit, pessoas, dups] = await Promise.all([
       api.todos("inv_esperado",COLS_ESP,{inventario_id:id},"serie"),
-      api.todos("leituras","id,serie,tecnico_id,lida_em,fase,origem,resultado,centro_sap,duplicada,observacao",{inventario_id:id},"id"),
+      api.todos("leituras","id,serie,tecnico_id,lida_em,fase,origem,resultado,centro_sap,duplicada,observacao,localizacao_informada",{inventario_id:id},"id"),
       api.todos("perfis","id,nome",{}),
       api.todos("base_duplicados","serie,centro,equipamento",{centro:r.centro})
     ]);
@@ -915,10 +945,11 @@ function calcular(r, esp, leit, pessoas, dups){
   const conforme = validas.filter(l=>l.resultado==="conforme").map(l=>({...espMap.get(l.serie),...l}));
   const falta = esp.filter(e=>!lidas.has(e.serie));
   const outra = validas.filter(l=>l.resultado==="outra_unidade");
+  const localDiv = conforme.filter(l=>l.localizacao_informada && l.localizacao_informada!==(l.localizacao||""));
   const sobra = validas.filter(l=>l.resultado==="sobra");
   const duplicadas = L.filter(l=>l.duplicada).map(l=>{ const p=lidas.get(l.serie); return {...l, primeiro:p?p.tecnico:"", primeiro_em:p?p.lida_em:null}; });
   const sem = L.filter(l=>l.resultado==="sem_etiqueta");
-  return {r, esp, conforme, falta, outra, sobra, duplicadas, sem, dups};
+  return {r, esp, conforme, falta, outra, sobra, duplicadas, sem, dups, localDiv, lidas:validas.length};
 }
 function tabela(cols, linhas, vazio){
   if(!linhas.length) return '<div class="empty">'+(vazio||"Nenhum.")+'</div>';
@@ -928,6 +959,7 @@ function tabela(cols, linhas, vazio){
     (linhas.length>MAX?'<p class="muted">Mostrando '+MAX+' de '+num(linhas.length)+'. A lista completa vai no Excel.</p>':'');
 }
 const C = {
+  linf:["Localiz. informada",l=>'<b>'+esc(l.localizacao_informada||"–")+'</b>'], lsap:["Localiz. no SAP",l=>esc(l.localizacao||"–")],
   serie:["Nº série",l=>esc(l.serie),"mono"], equip:["Equipamento",l=>esc(l.equipamento)], tipo:["Tipo",l=>esc(l.denominacao)],
   texto:["Material",l=>esc(l.texto_material)], sala:["Sala",l=>esc(l.sala)], loc:["Localiz.",l=>esc(l.localizacao)], stat:["Status",l=>esc(l.status_sistema)],
   cc:["Centro custo",l=>esc(l.centro_custo)], tec:["Técnico",l=>esc(l.tecnico)], hora:["Lida em",l=>fDH(l.lida_em)],
@@ -940,7 +972,7 @@ function renderDetalhe(){
   $("dtMeta").textContent="Aberto em "+fDH(r.aberto_em)+(r.busca_em?" · busca dirigida em "+fDH(r.busca_em):"")+(r.encerrado_em?" · encerrado em "+fDH(r.encerrado_em):"")+" · base: "+(r.base_arquivo||"–")+" ("+fData(r.base_data)+")";
   $("dEsp").textContent=num(d.esp.length); $("dOk").textContent=num(d.conforme.length); $("dFalta").textContent=num(d.falta.length);
   $("dFaltaLbl").textContent = aberto ? "ainda não encontradas" : "falta física";
-  $("dOutra").textContent=num(d.outra.length); $("dSobra").textContent=num(d.sobra.length); $("dDup").textContent=num(d.duplicadas.length);
+  $("dOutra").textContent=num(d.outra.length); $("dLoc").textContent=num(d.localDiv.length); $("dLidas").textContent=num(d.lidas); $("dSobra").textContent=num(d.sobra.length); $("dDup").textContent=num(d.duplicadas.length);
   $("dSem").textContent=num(d.sem.length); $("dInc").textContent=num(d.dups.length);
   $("dtTecnicos").innerHTML = (r.tecnicos||[]).length ? r.tecnicos.map(t=>esc(t.nome)+" ("+(t.enviou?"enviou busca "+fDH(t.enviou):t.terminou?"terminou contagem "+fDH(t.terminou):"contando")+")").join(" · ") : "Nenhum técnico entrou ainda.";
   const adm = eu.papel==="admin";
@@ -954,12 +986,13 @@ function renderDetalhe(){
   $("dtSecoes").innerHTML =
     secao("bad", aberto?"Ainda não encontradas":"Falta física", "Estão na base SAP desta unidade e não foram encontradas na planta."+(aberto?" O inventário ainda está em andamento.":" Candidatas a investigação ou baixa patrimonial."),
       tabela([C.serie,C.equip,C.tipo,C.texto,C.sala,C.loc,C.stat,C.cc], d.falta, "Todas as geladeiras da base foram encontradas."),d.falta.length) +
-    secao("warn","Divergência de localização","Encontradas nesta planta, mas cadastradas em outra unidade no SAP.", tabela([C.serie,C.csap,C.tec,C.hora,C.fase], d.outra),d.outra.length) +
-    secao("bad","Sobra física","Encontradas na planta e sem cadastro no SAP (GESP/GKS). Confira se não houve erro de digitação.", tabela([C.serie,C.tec,C.hora,C.fase], d.sobra),d.sobra.length) +
+    secao("warn","Divergência de localização","Encontradas nesta planta, mas cadastradas em outra unidade no SAP.", tabela([C.serie,C.csap,C.linf,C.tec,C.hora,C.fase], d.outra),d.outra.length) +
+    secao("warn","Localiz. diferente do SAP","Geladeiras desta unidade em que a localização informada pelo técnico é diferente da Localiz. cadastrada no SAP.", tabela([C.serie,C.lsap,C.linf,C.equip,C.tipo,C.tec,C.hora], d.localDiv),d.localDiv.length) +
+    secao("bad","Sobra física","Encontradas na planta e sem cadastro no SAP (GESP/GKS). Confira se não houve erro de digitação.", tabela([C.serie,C.linf,C.tec,C.hora,C.fase], d.sobra),d.sobra.length) +
     secao("warn","Leitura duplicada","O mesmo número foi lido mais de uma vez.", tabela([C.serie,["Lida de novo por",l=>esc(l.tecnico)],C.hora,["Primeira leitura",l=>esc(l.primeiro)+" · "+fDH(l.primeiro_em)]], d.duplicadas),d.duplicadas.length) +
-    secao("warn","Sem etiqueta","Geladeiras sem etiqueta ou com etiqueta ilegível registradas pelos técnicos.", tabela([["Observação",l=>esc(l.observacao)],C.tec,C.hora,["Foto",l=>'<button class="btn small" data-foto="'+l.id+'">Ver foto</button>']], d.sem),d.sem.length) +
+    secao("warn","Sem etiqueta","Geladeiras sem etiqueta ou com etiqueta ilegível registradas pelos técnicos.", tabela([["Observação",l=>esc(l.observacao||"–")],C.linf,C.tec,C.hora,["Foto",l=>'<button class="btn small" data-foto="'+l.id+'">Ver foto</button>']], d.sem),d.sem.length) +
     secao("mut","Inconsistência cadastral","Números de série que aparecem mais de uma vez na base SAP importada.", tabela([C.serie,["Unidade",l=>esc(l.centro)],C.equip], d.dups),d.dups.length) +
-    secao("ok","Conforme","Na base SAP e encontradas na planta"+(faltaBusca?" ("+num(faltaBusca)+" achadas na busca dirigida)":"")+".", tabela([C.serie,C.equip,C.tipo,C.sala,C.tec,C.hora,C.fase], d.conforme),d.conforme.length);
+    secao("ok","Conforme","Na base SAP e encontradas na planta"+(faltaBusca?" ("+num(faltaBusca)+" achadas na busca dirigida)":"")+".", tabela([C.serie,C.equip,C.tipo,C.sala,C.lsap,C.linf,C.tec,C.hora,C.fase], d.conforme),d.conforme.length);
 }
 function secao(cls,titulo,desc,html,n){ return '<div class="panel"><div class="sec-head"><h3><span class="dot '+cls+'"></span>'+titulo+'</h3><span class="count">'+num(n)+'</span></div><p>'+desc+'</p>'+html+'</div>'; }
 $("dtSecoes").onclick=async e=>{
@@ -989,14 +1022,15 @@ $("btnExport").onclick=async()=>{
     ["Inventário de geladeiras — unidade "+r.centro],["Situação",STATUS_TXT[r.status][0]],["Aberto em",dh(r.aberto_em)],["Busca dirigida em",dh(r.busca_em)],["Encerrado em",dh(r.encerrado_em)],
     ["Base SAP",(r.base_arquivo||"")+" ("+fData(r.base_data)+")"],["Técnicos",(r.tecnicos||[]).map(t=>t.nome).join(", ")],["Gerado em",new Date().toLocaleString("pt-BR")+" por "+eu.nome],[],
     ["Indicador","Quantidade"],["Na base SAP",d.esp.length],["Conforme",d.conforme.length],[r.status==="encerrado"?"Falta física":"Ainda não encontradas",d.falta.length],
-    ["Divergência de localização",d.outra.length],["Sobra física",d.sobra.length],["Leituras duplicadas",d.duplicadas.length],["Sem etiqueta",d.sem.length],["Inconsistência cadastral",d.dups.length]]), "Resumo");
+    ["Divergência de localização",d.outra.length],["Localiz. diferente do SAP",d.localDiv.length],["Sobra física",d.sobra.length],["Leituras duplicadas",d.duplicadas.length],["Sem etiqueta",d.sem.length],["Inconsistência cadastral",d.dups.length]]), "Resumo");
   add("Falta física", espCab, d.falta.map(espLin));
-  add("Divergência localização", ["Nº série","Unidade no SAP","Técnico","Lida em","Fase"], d.outra.map(l=>[l.serie,l.centro_sap,l.tecnico,dh(l.lida_em),fase(l)]));
-  add("Sobra física", ["Nº série","Técnico","Lida em","Fase"], d.sobra.map(l=>[l.serie,l.tecnico,dh(l.lida_em),fase(l)]));
+  add("Divergência localização", ["Nº série","Unidade no SAP","Localiz. informada","Técnico","Lida em","Fase"], d.outra.map(l=>[l.serie,l.centro_sap,l.localizacao_informada||"",l.tecnico,dh(l.lida_em),fase(l)]));
+  add("Localiz. diferente do SAP", ["Nº série","Localiz. no SAP","Localiz. informada","Equipamento","Tipo","Técnico","Lida em"], d.localDiv.map(l=>[l.serie,l.localizacao,l.localizacao_informada,l.equipamento,l.denominacao,l.tecnico,dh(l.lida_em)]));
+  add("Sobra física", ["Nº série","Localiz. informada","Técnico","Lida em","Fase"], d.sobra.map(l=>[l.serie,l.localizacao_informada||"",l.tecnico,dh(l.lida_em),fase(l)]));
   add("Leitura duplicada", ["Nº série","Lida de novo por","Lida em","Primeira leitura por","Primeira leitura em"], d.duplicadas.map(l=>[l.serie,l.tecnico,dh(l.lida_em),l.primeiro,dh(l.primeiro_em)]));
-  add("Sem etiqueta", ["Observação","Técnico","Lida em","Fase"], d.sem.map(l=>[l.observacao,l.tecnico,dh(l.lida_em),fase(l)]));
+  add("Sem etiqueta", ["Observação","Localiz. informada","Técnico","Lida em","Fase"], d.sem.map(l=>[l.observacao||"",l.localizacao_informada||"",l.tecnico,dh(l.lida_em),fase(l)]));
   add("Inconsistência cadastral", ["Nº série","Unidade","Equipamento"], d.dups.map(l=>[l.serie,l.centro,l.equipamento]));
-  add("Conforme", [...espCab,"Técnico","Lida em","Fase"], d.conforme.map(l=>[...espLin(l),l.tecnico,dh(l.lida_em),fase(l)]));
+  add("Conforme", [...espCab,"Localiz. informada","Técnico","Lida em","Fase"], d.conforme.map(l=>[...espLin(l),l.localizacao_informada||"",l.tecnico,dh(l.lida_em),fase(l)]));
   await entregar(XLSX, wb, "Inventario_"+r.centro+"_"+hoje()+".xlsx");
 };
 async function entregar(XLSX, wb, nome){
@@ -1058,7 +1092,7 @@ function renderPainel(){
     const r=l.r, pOk=100*r.conforme/(r.esperado||1), pResto=100-pOk;
     const tip=l.centro+" · "+STATUS_TXT[r.status][0]+" · aberto em "+fData(r.aberto_em)+"\n"+num(r.conforme)+" conforme de "+num(r.esperado)+" ("+l.p+"%)\n"+num(l.falta)+(l.enc?" em falta física":" ainda não encontradas")+"\n"+num(r.outra_unidade)+" de outra unidade · "+num(r.sobra)+" sobras";
     return '<button class="hb" data-id="'+r.id+'" data-tip="'+esc(tip)+'"><span class="lb">'+esc(l.centro)+'</span><span class="tr"><i class="s-ok" style="width:'+pOk+'%"></i><i class="'+(l.enc?"s-falta":"s-pend")+'" style="width:'+pResto+'%"></i></span><span class="vl"><b>'+l.p+'%</b> · '+num(l.falta)+(l.enc?" faltam":" pend.")+'</span></button>'; }).join("") || '<div class="empty">Importe a base SAP para ver as unidades.</div>';
-  const tot=[["Falta física",faltaEnc,"bad"],["Divergência de localização",soma("outra_unidade"),"warn"],["Sobra física",soma("sobra"),"bad"],["Leituras duplicadas",soma("duplicadas"),"warn"],["Sem etiqueta",soma("sem_etiqueta"),"warn"]];
+  const tot=[["Falta física",faltaEnc,"bad"],["Divergência de localização",soma("outra_unidade"),"warn"],["Localiz. diferente do SAP",soma("localiz_diverg"),"warn"],["Sobra física",soma("sobra"),"bad"],["Leituras duplicadas",soma("duplicadas"),"warn"],["Sem etiqueta",soma("sem_etiqueta"),"warn"]];
   const mx=Math.max(1,...tot.map(t=>t[1]));
   $("pDiverg").innerHTML = tot.map(t=>'<div class="hb tot" data-tip="'+esc(t[0]+": "+num(t[1]))+'"><span class="lb">'+t[0]+'</span><span class="tr"><i style="width:'+(100*t[1]/mx)+'%;background:var(--'+t[2]+')"></i></span><span class="vl"><b>'+num(t[1])+'</b></span></div>').join("");
   $("pAndamento").innerHTML = andamento.length ? andamento.map(r=>'<div class="item click inv-card" data-id="'+r.id+'"><span class="ico">'+svg('<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M9 5v2M9 13v3"/>')+'</span><span class="s">'+esc(r.centro)+'</span>'+pillStatus(r.status)+'<span class="d">'+pct(r.conforme,r.esperado)+'% conforme · '+num(r.lidas)+' lidas · '+esc((r.tecnicos||[]).map(t=>t.nome).join(", ")||"nenhum técnico ainda")+'</span></div>').join("")
